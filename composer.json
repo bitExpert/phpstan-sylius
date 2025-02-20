@@ -9,12 +9,19 @@
   "require-dev": {
     "sylius/resource-bundle": "^1.12",
     "sylius/grid-bundle": "^1.13",
-    "nikic/php-parser": "^5.4"
+    "nikic/php-parser": "^5.4",
+    "phpunit/phpunit": "^11.5"
   },
   "autoload": {
     "psr-4": {
       "bitExpert\\PHPStan\\": "src/bitExpert/PHPStan"
     }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "bitExpert\\PHPStan\\": "tests/bitExpert/PHPStan"
+    },
+    "files": ["tests/bitExpert/PHPStan/Sylius/Rule/data/grid.php"]
   },
   "extra": {
     "phpstan": {
