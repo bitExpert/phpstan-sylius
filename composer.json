@@ -1,0 +1,26 @@
+{
+  "name": "bitexpert/phpstan-sylius",
+  "type": "phpstan-extension",
+  "description": "Sylius extensions and rules for PHPStan",
+  "require": {
+    "php": "^8.2",
+    "phpstan/phpstan": "^2.1"
+  },
+  "require-dev": {
+    "sylius/resource-bundle": "^1.12",
+    "sylius/grid-bundle": "^1.13",
+    "nikic/php-parser": "^5.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "bitExpert\\PHPStan\\": "src/bitExpert/PHPStan"
+    }
+  },
+  "extra": {
+    "phpstan": {
+      "includes": [
+        "extension.neon"
+      ]
+    }
+  }
+}

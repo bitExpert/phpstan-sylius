@@ -1,0 +1,3 @@
+rules:
+	- bitExpert\PHPStan\Sylius\Rule\ResourceAwareGridNeedsResourceClass
+
