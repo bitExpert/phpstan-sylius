@@ -20,7 +20,7 @@ use PHPStan\Analyser\Scope;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 use PHPStan\Reflection\ReflectionProvider;
-use Sylius\Resource\Metadata\AsResource;
+use PHPStan\Type\ObjectType;
 
 class ResourceAwareGridNeedsResourceClass implements Rule
 {
@@ -39,6 +39,15 @@ class ResourceAwareGridNeedsResourceClass implements Rule
             return [];
         }
 
+        // run the checks only for subclasses of \Sylius\Bundle\GridBundle\Grid\AbstractGrid
+        $classReflection = $scope->getClassReflection();
+        $parentType = new ObjectType('\Sylius\Bundle\GridBundle\Grid\AbstractGrid');
+        $classType = new ObjectType($classReflection->getName());
+        if(!$parentType->isSuperTypeOf($classType)->yes()) {
+            return [];
+        }
+
+        // we are only interested in the getResourceClass() method
         $methodReflection = $node->getMethodReflection();
         if ($methodReflection->getName() !== 'getResourceClass') {
             return [];
@@ -58,13 +67,18 @@ class ResourceAwareGridNeedsResourceClass implements Rule
         $resourceClass = $this->broker->getClass($resourceClassName);
         $resourceClassAttributes = $resourceClass->getAttributes();
         foreach ($resourceClassAttributes as $attribute) {
-            if ($attribute->getName() === AsResource::class) {
+            if ($attribute->getName() === 'Sylius\Resource\Metadata\AsResource') {
                 return [];
             }
         }
 
+        $message = sprintf(
+            'getResourceClass() needs to provide a resource class. Mark "%s" with #[AsResource] attribute.',
+            $resourceClass->getName()
+        );
+
         return [
-            RuleErrorBuilder::message(sprintf('getResourceClass() needs to provide a resource class. Mark "%s" with #[AsResource] attribute.', $resourceClass))
+            RuleErrorBuilder::message($message)
                 ->identifier('sylius.grid.resourceClassRequired')
                 ->build(),
         ];

@@ -1,2 +1,3 @@
 rules:
 	- bitExpert\PHPStan\Sylius\Rule\ResourceAwareGridNeedsResourceClass
+	- bitExpert\PHPStan\Sylius\Rule\GridBuilderFieldIsPartOfResourceClass

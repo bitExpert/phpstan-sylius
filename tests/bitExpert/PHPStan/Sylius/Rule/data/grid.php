@@ -19,6 +19,7 @@ class Supplier implements ResourceInterface
 namespace App\Grid;
 
 use App\Entity\Supplier;
+use Sylius\Bundle\GridBundle\Builder\Field\StringField;
 use Sylius\Bundle\GridBundle\Builder\GridBuilderInterface;
 use Sylius\Bundle\GridBundle\Grid\AbstractGrid;
 use Sylius\Bundle\GridBundle\Grid\ResourceAwareGridInterface;
@@ -32,6 +33,9 @@ final class AdminSupplierGrid extends AbstractGrid implements ResourceAwareGridI
 
     public function buildGrid(GridBuilderInterface $gridBuilder): void
     {
+        $gridBuilder->addField(
+            StringField::create('name')->setLabel('app.ui.name')
+        );
     }
 
     public function getResourceClass(): string
