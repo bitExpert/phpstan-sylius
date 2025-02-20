@@ -13,24 +13,29 @@ declare(strict_types=1);
 namespace bitExpert\PHPStan\Sylius\Rule;
 
 use PhpParser\Node;
-use PHPStan\Node\InClassMethodNode;
+use PhpParser\Node\Expr\ClassConstFetch;
+use PhpParser\Node\Scalar\String_;
+use PHPStan\Node\MethodReturnStatementsNode;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
-use ReflectionClass;
-use ReflectionMethod;
+use PHPStan\Reflection\ReflectionProvider;
 use Sylius\Resource\Metadata\AsResource;
 
 class ResourceAwareGridNeedsResourceClass implements Rule
 {
+    public function __construct(private readonly ReflectionProvider $broker)
+    {
+    }
+
     public function getNodeType(): string
     {
-        return InClassMethodNode::class;
+        return MethodReturnStatementsNode::class;
     }
 
     public function processNode(Node $node, Scope $scope): array
     {
-        if (!$node instanceof InClassMethodNode) {
+        if (!$node instanceof MethodReturnStatementsNode) {
             return [];
         }
 
@@ -39,16 +44,23 @@ class ResourceAwareGridNeedsResourceClass implements Rule
             return [];
         }
 
-        // grab the return value of getResourceClass() method to identify the assigned resource class
-        $className = $node->getClassReflection()->getName();
-        $reflectionMethod = new ReflectionMethod($className, 'getResourceClass');
-        $resourceClass = $reflectionMethod->invoke(new $className);
-
-        // check if the class is marked with #[AsResource] attribute
-        $reflectionClass = new ReflectionClass($resourceClass);
-        $attributes = $reflectionClass->getAttributes(AsResource::class);
-        if (count($attributes) > 0) {
+        $resourceClassName = '';
+        $statements = $node->getStatements();
+        if ($statements[0]->expr instanceof String_) {
+            $resourceClassName = $statements[0]->expr->value;
+        }
+        else if($statements[0]->expr instanceof ClassConstFetch) {
+            $resourceClassName = $statements[0]->expr->class->name;
+        } else {
             return [];
+        }
+
+        $resourceClass = $this->broker->getClass($resourceClassName);
+        $resourceClassAttributes = $resourceClass->getAttributes();
+        foreach ($resourceClassAttributes as $attribute) {
+            if ($attribute->getName() === AsResource::class) {
+                return [];
+            }
         }
 
         return [
