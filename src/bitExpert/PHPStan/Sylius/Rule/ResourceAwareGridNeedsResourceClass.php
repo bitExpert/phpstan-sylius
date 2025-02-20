@@ -13,18 +13,48 @@ declare(strict_types=1);
 namespace bitExpert\PHPStan\Sylius\Rule;
 
 use PhpParser\Node;
+use PHPStan\Node\InClassMethodNode;
 use PHPStan\Analyser\Scope;
+use PHPStan\Rules\Rule;
+use PHPStan\Rules\RuleErrorBuilder;
+use ReflectionClass;
+use ReflectionMethod;
+use Sylius\Resource\Metadata\AsResource;
 
-class ResourceAwareGridNeedsResourceClass implements \PHPStan\Rules\Rule
+class ResourceAwareGridNeedsResourceClass implements Rule
 {
     public function getNodeType(): string
     {
-        return \PhpParser\Node::class;
+        return InClassMethodNode::class;
     }
 
     public function processNode(Node $node, Scope $scope): array
     {
-        var_dump(get_class($node));
-        return [];
+        if (!$node instanceof InClassMethodNode) {
+            return [];
+        }
+
+        $methodReflection = $node->getMethodReflection();
+        if ($methodReflection->getName() !== 'getResourceClass') {
+            return [];
+        }
+
+        // grab the return value of getResourceClass() method to identify the assigned resource class
+        $className = $node->getClassReflection()->getName();
+        $reflectionMethod = new ReflectionMethod($className, 'getResourceClass');
+        $resourceClass = $reflectionMethod->invoke(new $className);
+
+        // check if the class is marked with #[AsResource] attribute
+        $reflectionClass = new ReflectionClass($resourceClass);
+        $attributes = $reflectionClass->getAttributes(AsResource::class);
+        if (count($attributes) > 0) {
+            return [];
+        }
+
+        return [
+            RuleErrorBuilder::message(sprintf('getResourceClass() needs to provide a resource class. Mark "%s" with #[AsResource] attribute.', $resourceClass))
+                ->identifier('sylius.grid.resourceClassRequired')
+                ->build(),
+        ];
     }
 }
