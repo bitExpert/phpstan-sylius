@@ -13,17 +13,20 @@ declare(strict_types=1);
 namespace bitExpert\PHPStan\Sylius\Rule\Grid;
 
 use PhpParser\Node;
+use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\StaticCall;
+use PhpParser\Node\Identifier;
 use PhpParser\Node\Scalar\String_;
 use PHPStan\Analyser\Scope;
-use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
-use ReflectionMethod;
 
-readonly class GridBuilderFilterIsPartOfResourceClass extends AbstractGridBuilderRule
+/**
+ * @implements Rule<StaticCall>
+ */
+readonly class GridBuilderFilterIsPartOfResourceClass extends AbstractGridBuilderRule implements Rule
 {
     public function getNodeType(): string
     {
@@ -36,29 +39,31 @@ readonly class GridBuilderFilterIsPartOfResourceClass extends AbstractGridBuilde
             return [];
         }
 
-        if ($node->name->toString() !== 'create') {
+        if ((!$node->name instanceof Identifier) || ('create' !== $node->name->toString())) {
             return [];
         }
 
-        if(!$this->scopeIsAbstractGridSubclass($scope)) {
+        if (!$this->scopeIsAbstractGridSubclass($scope)) {
             return [];
         }
 
-        if(!$this->isFilterInterfaceReturnType($scope->getType($node))) {
+        if (!$this->isFilterInterfaceReturnType($scope->getType($node))) {
             return [];
         }
 
+        /** @var Arg $arg */
+        $arg = $node->args[0];
         /** @var String_ $fieldName */
-        $fieldName = $node->args[0]->value;
+        $fieldName = $arg->value;
         $resourceClassReflection = $this->getResourceClassEntity($scope);
-        if ($resourceClassReflection->hasProperty($fieldName->value)) {
+        if (($resourceClassReflection == null) || ($resourceClassReflection->hasProperty($fieldName->value))) {
             return [];
         }
 
-        $message = sprintf(
+        $message = \sprintf(
             'The filter field "%s" needs to exists as property in resource class "%s".',
             $fieldName->value,
-            $resourceClassReflection->getName()
+            $resourceClassReflection->getName(),
         );
 
         return [
@@ -72,6 +77,7 @@ readonly class GridBuilderFilterIsPartOfResourceClass extends AbstractGridBuilde
     {
         try {
             $expectedReturnType = new ObjectType('\Sylius\Bundle\GridBundle\Builder\Filter\FilterInterface');
+
             return $expectedReturnType->isSuperTypeOf($type)->yes();
         } catch (\Throwable $e) {
         }

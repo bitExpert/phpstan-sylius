@@ -1,0 +1,14 @@
+parameters:
+    level: max
+    reportUnmatchedIgnoredErrors: false
+    treatPhpDocTypesAsCertain: false
+    paths:
+        - src
+        - tests
+    fileExtensions:
+        - php
+    ignoreErrors:
+        -
+            message: '~Cannot cast mixed to string.~'
+            path: src/bitExpert/PHPStan/Sylius/Rule/Grid/AbstractGridBuilderRule.php
+

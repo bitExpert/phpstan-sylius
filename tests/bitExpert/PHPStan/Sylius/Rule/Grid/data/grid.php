@@ -35,13 +35,13 @@ final class AdminSupplierGrid extends AbstractGrid implements ResourceAwareGridI
     public function buildGrid(GridBuilderInterface $gridBuilder): void
     {
         $gridBuilder->addField(
-            StringField::create('id')->setLabel('app.ui.id')
+            StringField::create('id')->setLabel('app.ui.id'),
         );
         $gridBuilder->addField(
-            StringField::create('name')->setLabel('app.ui.name')
+            StringField::create('name')->setLabel('app.ui.name'),
         );
         $gridBuilder->addFilter(
-            Filter::create('name', 'string')
+            Filter::create('name', 'string'),
         );
     }
 
@@ -60,6 +60,6 @@ final class SomeOtherClass
 
     public function getResourceClass(): string
     {
-        return SomeOtherClass::class;
+        return self::class;
     }
 }

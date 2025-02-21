@@ -10,7 +10,9 @@
     "sylius/resource-bundle": "^1.12",
     "sylius/grid-bundle": "^1.13",
     "nikic/php-parser": "^5.4",
-    "phpunit/phpunit": "^11.5"
+    "phpunit/phpunit": "^11.5",
+    "friendsofphp/php-cs-fixer": "^3.69",
+    "madewithlove/license-checker": "^1.6"
   },
   "autoload": {
     "psr-4": {
@@ -29,5 +31,12 @@
         "extension.neon"
       ]
     }
+  },
+  "scripts": {
+    "cs": "vendor/bin/php-cs-fixer fix --dry-run --diff",
+    "cs-gitlab": "vendor/bin/php-cs-fixer fix --dry-run --format=gitlab --using-cache=no > gl-cs-fixer.json",
+    "cs-fix": "vendor/bin/php-cs-fixer fix",
+    "check-license": "vendor/bin/license-checker check",
+    "static-analysis": "vendor/bin/phpstan"
   }
 }

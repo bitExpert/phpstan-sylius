@@ -20,6 +20,9 @@ use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 use PHPStan\Type\Constant\ConstantStringType;
 
+/**
+ * @implements Rule<InClassNode>
+ */
 class IndexOperationGridRule implements Rule
 {
     public function __construct(private ReflectionProvider $broker)
@@ -38,23 +41,22 @@ class IndexOperationGridRule implements Rule
         }
 
         $classReflection = $scope->getClassReflection();
-        if (!$classReflection->implementsInterface('Sylius\Resource\Model\ResourceInterface'))
-        {
+        if (($classReflection === null) || (!$classReflection->implementsInterface('Sylius\Resource\Model\ResourceInterface'))) {
             return [];
         }
 
         $resourceClassAttributes = $classReflection->getAttributes();
         foreach ($resourceClassAttributes as $attribute) {
-            if ($attribute->getName() === 'Sylius\Resource\Metadata\Index') {
+            if ('Sylius\Resource\Metadata\Index' === $attribute->getName()) {
+                /** @var array<string, ConstantStringType> $argumentTypes */
                 $argumentTypes = $attribute->getArgumentTypes();
                 if (isset($argumentTypes['grid'])) {
-                    /** @var ConstantStringType $argumentTypes['grid'] */
                     $gridClass = $argumentTypes['grid']->getValue();
 
                     try {
                         $this->broker->getClass($gridClass);
                     } catch (\Throwable $e) {
-                        $message = sprintf('Grid class "%s" not found!', $gridClass);
+                        $message = \sprintf('Grid class "%s" not found!', $gridClass);
 
                         return [
                             RuleErrorBuilder::message($message)
