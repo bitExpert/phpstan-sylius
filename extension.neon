@@ -2,3 +2,5 @@ rules:
 	- bitExpert\PHPStan\Sylius\Rule\Grid\ResourceAwareGridNeedsResourceClass
 	- bitExpert\PHPStan\Sylius\Rule\Grid\GridBuilderFieldIsPartOfResourceClass
 	- bitExpert\PHPStan\Sylius\Rule\Grid\GridBuilderFilterIsPartOfResourceClass
+	- bitExpert\PHPStan\Sylius\Rule\Resource\IndexOperationGridRule
+
