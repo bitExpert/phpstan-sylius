@@ -20,6 +20,7 @@ namespace App\Grid;
 
 use App\Entity\Supplier;
 use Sylius\Bundle\GridBundle\Builder\Field\StringField;
+use Sylius\Bundle\GridBundle\Builder\Filter\Filter;
 use Sylius\Bundle\GridBundle\Builder\GridBuilderInterface;
 use Sylius\Bundle\GridBundle\Grid\AbstractGrid;
 use Sylius\Bundle\GridBundle\Grid\ResourceAwareGridInterface;
@@ -38,6 +39,9 @@ final class AdminSupplierGrid extends AbstractGrid implements ResourceAwareGridI
         );
         $gridBuilder->addField(
             StringField::create('name')->setLabel('app.ui.name')
+        );
+        $gridBuilder->addFilter(
+            Filter::create('name', 'string')
         );
     }
 

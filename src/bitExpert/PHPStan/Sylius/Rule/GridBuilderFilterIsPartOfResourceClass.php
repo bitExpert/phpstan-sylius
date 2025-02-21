@@ -13,16 +13,16 @@ declare(strict_types=1);
 namespace bitExpert\PHPStan\Sylius\Rule;
 
 use PhpParser\Node;
-use PhpParser\Node\Expr\ClassConstFetch;
+use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Scalar\String_;
-use PHPStan\Node\MethodReturnStatementsNode;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\ObjectType;
+use ReflectionMethod;
 
-readonly class ResourceAwareGridNeedsResourceClass implements Rule
+readonly class GridBuilderFilterIsPartOfResourceClass implements Rule
 {
     public function __construct(private ReflectionProvider $broker)
     {
@@ -30,12 +30,12 @@ readonly class ResourceAwareGridNeedsResourceClass implements Rule
 
     public function getNodeType(): string
     {
-        return MethodReturnStatementsNode::class;
+        return StaticCall::class;
     }
 
     public function processNode(Node $node, Scope $scope): array
     {
-        if (!$node instanceof MethodReturnStatementsNode) {
+        if (!$node instanceof StaticCall) {
             return [];
         }
 
@@ -47,39 +47,38 @@ readonly class ResourceAwareGridNeedsResourceClass implements Rule
             return [];
         }
 
-        // we are only interested in the getResourceClass() method
-        $methodReflection = $node->getMethodReflection();
-        if ($methodReflection->getName() !== 'getResourceClass') {
+        if ($node->name->toString() !== 'create') {
             return [];
         }
 
-        $resourceClassName = '';
-        $statements = $node->getStatements();
-        if ($statements[0]->expr instanceof String_) {
-            $resourceClassName = $statements[0]->expr->value;
-        }
-        else if($statements[0]->expr instanceof ClassConstFetch) {
-            $resourceClassName = $statements[0]->expr->class->name;
-        } else {
+        // check if return type is what we expect
+        $returnType = $scope->getType($node);
+        $expectedReturnType = new ObjectType('\Sylius\Bundle\GridBundle\Builder\Filter\FilterInterface');
+        if (!$expectedReturnType->isSuperTypeOf($returnType)->yes()) {
             return [];
         }
 
-        $resourceClass = $this->broker->getClass($resourceClassName);
-        $resourceClassAttributes = $resourceClass->getAttributes();
-        foreach ($resourceClassAttributes as $attribute) {
-            if ($attribute->getName() === 'Sylius\Resource\Metadata\AsResource') {
-                return [];
-            }
+        $methodReflection = $classReflection->getNativeMethod('getResourceClass');
+
+        $reflectionMethod = new ReflectionMethod($classReflection->getName(), $methodReflection->getName());
+        $resourceClass = $reflectionMethod->invoke(new ($classReflection->getName()));
+
+        /** @var String_ $fieldName */
+        $fieldName = $node->args[0]->value;
+        $resourceClassReflection = $this->broker->getClass($resourceClass);
+        if ($resourceClassReflection->hasProperty($fieldName->value)) {
+            return [];
         }
 
         $message = sprintf(
-            'getResourceClass() needs to provide a resource class. Mark "%s" with #[AsResource] attribute.',
-            $resourceClass->getName()
+            'The filter field "%s" needs to exists as property in resource class "%s".',
+            $fieldName->value,
+            $resourceClass
         );
 
         return [
             RuleErrorBuilder::message($message)
-                ->identifier('sylius.grid.resourceClassRequired')
+                ->identifier('sylius.grid.resourceClassMissingFilter')
                 ->build(),
         ];
     }

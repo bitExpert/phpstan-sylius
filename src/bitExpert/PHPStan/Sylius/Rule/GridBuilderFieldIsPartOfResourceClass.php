@@ -22,9 +22,9 @@ use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\ObjectType;
 use ReflectionMethod;
 
-class GridBuilderFieldIsPartOfResourceClass implements Rule
+readonly class GridBuilderFieldIsPartOfResourceClass implements Rule
 {
-    public function __construct(private readonly ReflectionProvider $broker)
+    public function __construct(private ReflectionProvider $broker)
     {
     }
 

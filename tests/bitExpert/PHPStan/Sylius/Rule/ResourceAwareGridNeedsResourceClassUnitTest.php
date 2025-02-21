@@ -12,11 +12,12 @@ declare(strict_types=1);
 
 namespace bitExpert\PHPStan\Sylius\Rule;
 
+use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 
 class ResourceAwareGridNeedsResourceClassUnitTest extends RuleTestCase
 {
-    protected function getRule(): \PHPStan\Rules\Rule
+    protected function getRule(): Rule
     {
         return new ResourceAwareGridNeedsResourceClass($this->createReflectionProvider());
     }
@@ -28,7 +29,7 @@ class ResourceAwareGridNeedsResourceClassUnitTest extends RuleTestCase
             [
                 [
                     'getResourceClass() needs to provide a resource class. Mark "App\Entity\Supplier" with #[AsResource] attribute.',
-                    44,
+                    48,
                 ],
             ]
         );

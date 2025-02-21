@@ -15,11 +15,11 @@ namespace bitExpert\PHPStan\Sylius\Rule;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 
-class GridBuilderFieldIsPartOfResourceClassUnitTest extends RuleTestCase
+class GridBuilderFilterIsPartOfResourceClassUnitTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {
-        return new GridBuilderFieldIsPartOfResourceClass($this->createReflectionProvider());
+        return new GridBuilderFilterIsPartOfResourceClass($this->createReflectionProvider());
     }
 
     public function testRule(): void
@@ -28,8 +28,8 @@ class GridBuilderFieldIsPartOfResourceClassUnitTest extends RuleTestCase
             [ __DIR__ . '/data/grid.php'],
             [
                 [
-                    'The field "name" needs to exists as property in resource class "App\Entity\Supplier".',
-                    41,
+                    'The filter field "name" needs to exists as property in resource class "App\Entity\Supplier".',
+                    44,
                 ],
             ]
         );
