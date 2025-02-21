@@ -2,6 +2,14 @@
   "name": "bitexpert/phpstan-sylius",
   "type": "phpstan-extension",
   "description": "Sylius extensions and rules for PHPStan",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Stephan Hochdörfer",
+      "email": "S.Hochdoerfer@bitExpert.de",
+      "homepage": "http://www.bitExpert.de"
+    }
+  ],
   "require": {
     "php": "^8.2",
     "phpstan/phpstan": "^2.1"
