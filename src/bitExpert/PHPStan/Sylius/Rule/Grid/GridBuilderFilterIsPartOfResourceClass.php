@@ -20,14 +20,11 @@ use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 use PHPStan\Type\ObjectType;
+use PHPStan\Type\Type;
 use ReflectionMethod;
 
-readonly class GridBuilderFilterIsPartOfResourceClass implements Rule
+readonly class GridBuilderFilterIsPartOfResourceClass extends AbstractGridBuilderRule
 {
-    public function __construct(private ReflectionProvider $broker)
-    {
-    }
-
     public function getNodeType(): string
     {
         return StaticCall::class;
@@ -39,33 +36,21 @@ readonly class GridBuilderFilterIsPartOfResourceClass implements Rule
             return [];
         }
 
-        // run the checks only for subclasses of \Sylius\Bundle\GridBundle\Grid\AbstractGrid
-        $classReflection = $scope->getClassReflection();
-        $parentType = new ObjectType('\Sylius\Bundle\GridBundle\Grid\AbstractGrid');
-        $classType = new ObjectType($classReflection->getName());
-        if(!$parentType->isSuperTypeOf($classType)->yes()) {
-            return [];
-        }
-
         if ($node->name->toString() !== 'create') {
             return [];
         }
 
-        // check if return type is what we expect
-        $returnType = $scope->getType($node);
-        $expectedReturnType = new ObjectType('\Sylius\Bundle\GridBundle\Builder\Filter\FilterInterface');
-        if (!$expectedReturnType->isSuperTypeOf($returnType)->yes()) {
+        if(!$this->scopeIsAbstractGridSubclass($scope)) {
             return [];
         }
 
-        $methodReflection = $classReflection->getNativeMethod('getResourceClass');
-
-        $reflectionMethod = new ReflectionMethod($classReflection->getName(), $methodReflection->getName());
-        $resourceClass = $reflectionMethod->invoke(new ($classReflection->getName()));
+        if(!$this->isFilterInterfaceReturnType($scope->getType($node))) {
+            return [];
+        }
 
         /** @var String_ $fieldName */
         $fieldName = $node->args[0]->value;
-        $resourceClassReflection = $this->broker->getClass($resourceClass);
+        $resourceClassReflection = $this->getResourceClassEntity($scope);
         if ($resourceClassReflection->hasProperty($fieldName->value)) {
             return [];
         }
@@ -73,7 +58,7 @@ readonly class GridBuilderFilterIsPartOfResourceClass implements Rule
         $message = sprintf(
             'The filter field "%s" needs to exists as property in resource class "%s".',
             $fieldName->value,
-            $resourceClass
+            $resourceClassReflection->getName()
         );
 
         return [
@@ -81,5 +66,16 @@ readonly class GridBuilderFilterIsPartOfResourceClass implements Rule
                 ->identifier('sylius.grid.resourceClassMissingFilter')
                 ->build(),
         ];
+    }
+
+    private function isFilterInterfaceReturnType(Type $type): bool
+    {
+        try {
+            $expectedReturnType = new ObjectType('\Sylius\Bundle\GridBundle\Builder\Filter\FilterInterface');
+            return $expectedReturnType->isSuperTypeOf($type)->yes();
+        } catch (\Throwable $e) {
+        }
+
+        return false;
     }
 }
