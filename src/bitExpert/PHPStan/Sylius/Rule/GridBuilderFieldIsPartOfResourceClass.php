@@ -51,6 +51,13 @@ class GridBuilderFieldIsPartOfResourceClass implements Rule
             return [];
         }
 
+        // check if return type is what we expect
+        $returnType = $scope->getType($node);
+        $expectedReturnType = new ObjectType('\Sylius\Bundle\GridBundle\Builder\Field\FieldInterface');
+        if (!$expectedReturnType->isSuperTypeOf($returnType)->yes()) {
+            return [];
+        }
+
         $methodReflection = $classReflection->getNativeMethod('getResourceClass');
 
         $reflectionMethod = new ReflectionMethod($classReflection->getName(), $methodReflection->getName());

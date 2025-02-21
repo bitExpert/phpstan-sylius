@@ -28,7 +28,7 @@ class ResourceAwareGridNeedsResourceClassUnitTest extends RuleTestCase
             [
                 [
                     'getResourceClass() needs to provide a resource class. Mark "App\Entity\Supplier" with #[AsResource] attribute.',
-                    41,
+                    44,
                 ],
             ]
         );
