@@ -1,4 +1,4 @@
 rules:
-	- bitExpert\PHPStan\Sylius\Rule\ResourceAwareGridNeedsResourceClass
-	- bitExpert\PHPStan\Sylius\Rule\GridBuilderFieldIsPartOfResourceClass
-	- bitExpert\PHPStan\Sylius\Rule\GridBuilderFilterIsPartOfResourceClass
+	- bitExpert\PHPStan\Sylius\Rule\Grid\ResourceAwareGridNeedsResourceClass
+	- bitExpert\PHPStan\Sylius\Rule\Grid\GridBuilderFieldIsPartOfResourceClass
+	- bitExpert\PHPStan\Sylius\Rule\Grid\GridBuilderFilterIsPartOfResourceClass

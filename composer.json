@@ -21,7 +21,7 @@
     "psr-4": {
       "bitExpert\\PHPStan\\": "tests/bitExpert/PHPStan"
     },
-    "files": ["tests/bitExpert/PHPStan/Sylius/Rule/data/grid.php"]
+    "files": ["tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid.php"]
   },
   "extra": {
     "phpstan": {

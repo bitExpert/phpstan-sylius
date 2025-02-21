@@ -10,16 +10,16 @@
  */
 declare(strict_types=1);
 
-namespace bitExpert\PHPStan\Sylius\Rule;
+namespace bitExpert\PHPStan\Sylius\Rule\Grid;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Scalar\String_;
-use PHPStan\Node\MethodReturnStatementsNode;
 use PHPStan\Analyser\Scope;
+use PHPStan\Node\MethodReturnStatementsNode;
+use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
-use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Type\ObjectType;
 
 readonly class ResourceAwareGridNeedsResourceClass implements Rule

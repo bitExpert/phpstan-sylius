@@ -10,16 +10,16 @@
  */
 declare(strict_types=1);
 
-namespace bitExpert\PHPStan\Sylius\Rule;
+namespace bitExpert\PHPStan\Sylius\Rule\Grid;
 
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 
-class ResourceAwareGridNeedsResourceClassUnitTest extends RuleTestCase
+class GridBuilderFilterIsPartOfResourceClassUnitTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {
-        return new ResourceAwareGridNeedsResourceClass($this->createReflectionProvider());
+        return new GridBuilderFilterIsPartOfResourceClass($this->createReflectionProvider());
     }
 
     public function testRule(): void
@@ -28,8 +28,8 @@ class ResourceAwareGridNeedsResourceClassUnitTest extends RuleTestCase
             [ __DIR__ . '/data/grid.php'],
             [
                 [
-                    'getResourceClass() needs to provide a resource class. Mark "App\Entity\Supplier" with #[AsResource] attribute.',
-                    48,
+                    'The filter field "name" needs to exists as property in resource class "App\Entity\Supplier".',
+                    44,
                 ],
             ]
         );

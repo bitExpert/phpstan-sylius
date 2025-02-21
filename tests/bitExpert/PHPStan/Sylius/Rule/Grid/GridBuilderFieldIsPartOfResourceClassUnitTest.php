@@ -10,7 +10,7 @@
  */
 declare(strict_types=1);
 
-namespace bitExpert\PHPStan\Sylius\Rule;
+namespace bitExpert\PHPStan\Sylius\Rule\Grid;
 
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
