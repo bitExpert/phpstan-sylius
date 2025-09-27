@@ -40,6 +40,9 @@ final class AdminSupplierGrid extends AbstractGrid implements ResourceAwareGridI
         $gridBuilder->addField(
             StringField::create('name')->setLabel('app.ui.name'),
         );
+        $gridBuilder->addField(
+            StringField::create('.')->setLabel('app.ui.some_calculated_field'),
+        );
         $gridBuilder->addFilter(
             Filter::create('name', 'string'),
         );
