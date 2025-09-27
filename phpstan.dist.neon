@@ -5,10 +5,11 @@ parameters:
     paths:
         - src
         - tests
+    excludePaths:
+        - tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid.php
     fileExtensions:
         - php
     ignoreErrors:
         -
             message: '~Cannot cast mixed to string.~'
             path: src/bitExpert/PHPStan/Sylius/Rule/Grid/AbstractGridBuilderRule.php
-

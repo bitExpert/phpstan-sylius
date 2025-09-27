@@ -4,3 +4,16 @@ rules:
 	- bitExpert\PHPStan\Sylius\Rule\Grid\GridBuilderFilterIsPartOfResourceClass
 	- bitExpert\PHPStan\Sylius\Rule\Resource\IndexOperationGridRule
 
+services:
+	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\CollectRessourceClassForGridClass
+		tags:
+			- phpstan.collector
+	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\CollectFieldsForGridClass
+		tags:
+			- phpstan.collector
+	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\CollectFilterForGridClass
+		tags:
+			- phpstan.collector

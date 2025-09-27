@@ -41,7 +41,7 @@ class IndexOperationGridRule implements Rule
         }
 
         $classReflection = $scope->getClassReflection();
-        if (($classReflection === null) || (!$classReflection->implementsInterface('Sylius\Resource\Model\ResourceInterface'))) {
+        if ((null === $classReflection) || (!$classReflection->implementsInterface('Sylius\Resource\Model\ResourceInterface'))) {
             return [];
         }
 

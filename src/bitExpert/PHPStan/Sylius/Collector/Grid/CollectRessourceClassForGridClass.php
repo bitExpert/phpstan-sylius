@@ -10,7 +10,7 @@
  */
 declare(strict_types=1);
 
-namespace bitExpert\PHPStan\Sylius\Rule\Grid;
+namespace bitExpert\PHPStan\Sylius\Collector\Grid;
 
 use PhpParser\Node;
 use PhpParser\Node\Expr\ClassConstFetch;
@@ -18,21 +18,15 @@ use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\Return_;
 use PHPStan\Analyser\Scope;
+use PHPStan\Collectors\Collector;
 use PHPStan\Node\MethodReturnStatementsNode;
-use PHPStan\Reflection\ReflectionProvider;
-use PHPStan\Rules\Rule;
-use PHPStan\Rules\RuleErrorBuilder;
 use PHPStan\Type\ObjectType;
 
 /**
- * @implements Rule<MethodReturnStatementsNode>
+ * @implements Collector<MethodReturnStatementsNode, array{string, string, int}>
  */
-readonly class ResourceAwareGridNeedsResourceClass implements Rule
+class CollectRessourceClassForGridClass implements Collector
 {
-    public function __construct(private ReflectionProvider $broker)
-    {
-    }
-
     /**
      * @return class-string
      */
@@ -41,27 +35,27 @@ readonly class ResourceAwareGridNeedsResourceClass implements Rule
         return MethodReturnStatementsNode::class;
     }
 
-    public function processNode(Node $node, Scope $scope): array
+    public function processNode(Node $node, Scope $scope): ?array
     {
         if (!$node instanceof MethodReturnStatementsNode) {
-            return [];
+            return null;
         }
 
         // run the checks only for subclasses of \Sylius\Bundle\GridBundle\Grid\AbstractGrid
         $classReflection = $scope->getClassReflection();
         if (null === $classReflection) {
-            return [];
+            return null;
         }
         $parentType = new ObjectType('\Sylius\Bundle\GridBundle\Grid\AbstractGrid');
         $classType = new ObjectType($classReflection->getName());
         if (!$parentType->isSuperTypeOf($classType)->yes()) {
-            return [];
+            return null;
         }
 
         // we are only interested in the getResourceClass() method
         $methodReflection = $node->getMethodReflection();
         if ('getResourceClass' !== $methodReflection->getName()) {
-            return [];
+            return null;
         }
 
         $resourceClassName = '';
@@ -73,27 +67,12 @@ readonly class ResourceAwareGridNeedsResourceClass implements Rule
             /** @var FullyQualified $class */
             $class = $statements[0]->expr->class;
             $resourceClassName = $class->name;
-        } else {
-            return [];
         }
 
-        $resourceClass = $this->broker->getClass($resourceClassName);
-        $resourceClassAttributes = $resourceClass->getAttributes();
-        foreach ($resourceClassAttributes as $attribute) {
-            if ('Sylius\Resource\Metadata\AsResource' === $attribute->getName()) {
-                return [];
-            }
+        if (!empty($resourceClassName)) {
+            return [$classType->getClassName(), $resourceClassName, $node->getLine()];
         }
 
-        $message = \sprintf(
-            'getResourceClass() needs to provide a resource class. Mark "%s" with #[AsResource] attribute.',
-            $resourceClass->getName(),
-        );
-
-        return [
-            RuleErrorBuilder::message($message)
-                ->identifier('sylius.grid.resourceClassRequired')
-                ->build(),
-        ];
+        return null;
     }
 }

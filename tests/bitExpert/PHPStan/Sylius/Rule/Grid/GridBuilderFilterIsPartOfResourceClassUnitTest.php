@@ -12,14 +12,27 @@ declare(strict_types=1);
 
 namespace bitExpert\PHPStan\Sylius\Rule\Grid;
 
+use bitExpert\PHPStan\Sylius\Collector\Grid\CollectFilterForGridClass;
+use bitExpert\PHPStan\Sylius\Collector\Grid\CollectRessourceClassForGridClass;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 
+/**
+ * @extends RuleTestCase<GridBuilderFilterIsPartOfResourceClass>
+ */
 class GridBuilderFilterIsPartOfResourceClassUnitTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {
         return new GridBuilderFilterIsPartOfResourceClass($this->createReflectionProvider());
+    }
+
+    protected function getCollectors(): array
+    {
+        return [
+            new CollectRessourceClassForGridClass(),
+            new CollectFilterForGridClass(),
+        ];
     }
 
     public function testRule(): void
