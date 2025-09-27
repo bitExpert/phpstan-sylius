@@ -12,76 +12,99 @@ declare(strict_types=1);
 
 namespace bitExpert\PHPStan\Sylius\Rule\Grid;
 
+use bitExpert\PHPStan\Sylius\Collector\Grid\CollectFilterForGridClass;
+use bitExpert\PHPStan\Sylius\Collector\Grid\CollectRessourceClassForGridClass;
 use PhpParser\Node;
-use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\StaticCall;
-use PhpParser\Node\Identifier;
-use PhpParser\Node\Scalar\String_;
 use PHPStan\Analyser\Scope;
+use PHPStan\Node\CollectedDataNode;
+use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
-use PHPStan\Type\ObjectType;
-use PHPStan\Type\Type;
 
 /**
  * @implements Rule<StaticCall>
  */
-readonly class GridBuilderFilterIsPartOfResourceClass extends AbstractGridBuilderRule implements Rule
+readonly class GridBuilderFilterIsPartOfResourceClass implements Rule
 {
+    public function __construct(protected ReflectionProvider $broker)
+    {
+    }
+
+    /**
+     * @return class-string
+     */
     public function getNodeType(): string
     {
-        return StaticCall::class;
+        return CollectedDataNode::class;
     }
 
     public function processNode(Node $node, Scope $scope): array
     {
-        if (!$node instanceof StaticCall) {
+        if (!$node instanceof CollectedDataNode) {
             return [];
         }
 
-        if ((!$node->name instanceof Identifier) || ('create' !== $node->name->toString())) {
-            return [];
+        $gridResourceMap = [];
+        $gridFilesMap = [];
+        $gridFilterFieldsMap = [];
+
+        $resources = $node->get(CollectRessourceClassForGridClass::class);
+        /** @var array<string, array<string, string>> $resources */
+        foreach ($resources as $mapping) {
+            foreach ($mapping as $mappingConfig) {
+                $gridClassName = $mappingConfig[0] ?? null;
+                $resourceClassName = $mappingConfig[1] ?? null;
+
+                if (null !== $gridClassName && null !== $resourceClassName) {
+                    $gridResourceMap[$gridClassName] = $resourceClassName;
+                }
+            }
         }
 
-        if (!$this->scopeIsAbstractGridSubclass($scope)) {
-            return [];
+        $filters = $node->get(CollectFilterForGridClass::class);
+        /** @var array<string, array<string, array<string, string>>> $filters */
+        foreach ($filters as $file => $mapping) {
+            foreach ($mapping as $mappingConfig) {
+                $gridClassName = $mappingConfig[0] ?? null;
+                $resourceField = $mappingConfig[1] ?? null;
+
+                $lineNo = $mappingConfig[2] ?? null;
+
+                if (null !== $gridClassName && null !== $resourceField && null !== $lineNo) {
+                    $gridFilterFieldsMap[$gridClassName][] = [$resourceField, $lineNo];
+                    $gridFilesMap[$gridClassName] = $file;
+                }
+            }
         }
 
-        if (!$this->isFilterInterfaceReturnType($scope->getType($node))) {
-            return [];
+        $errors = [];
+        /** @var array<string, string> $gridResourceMap */
+        foreach ($gridResourceMap as $gridClassName => $resourceClassName) {
+            if (isset($gridFilterFieldsMap[$gridClassName])) {
+                $resourceClass = $this->broker->getClass($resourceClassName);
+
+                foreach ($gridFilterFieldsMap[$gridClassName] as $field) {
+                    $fieldName = $field[0];
+                    $lineNo = $field[1];
+
+                    if (!$resourceClass->hasProperty($fieldName)) {
+                        $message = \sprintf(
+                            'The filter field "%s" needs to exists as property in resource class "%s".',
+                            $fieldName,
+                            $resourceClassName,
+                        );
+
+                        $errors[] = RuleErrorBuilder::message($message)
+                            ->identifier('sylius.grid.resourceClassMissingFilter')
+                            ->file($gridFilesMap[$gridClassName])
+                            ->line($lineNo)
+                            ->build();
+                    }
+                }
+            }
         }
 
-        /** @var Arg $arg */
-        $arg = $node->args[0];
-        /** @var String_ $fieldName */
-        $fieldName = $arg->value;
-        $resourceClassReflection = $this->getResourceClassEntity($scope);
-        if (($resourceClassReflection == null) || ($resourceClassReflection->hasProperty($fieldName->value))) {
-            return [];
-        }
-
-        $message = \sprintf(
-            'The filter field "%s" needs to exists as property in resource class "%s".',
-            $fieldName->value,
-            $resourceClassReflection->getName(),
-        );
-
-        return [
-            RuleErrorBuilder::message($message)
-                ->identifier('sylius.grid.resourceClassMissingFilter')
-                ->build(),
-        ];
-    }
-
-    private function isFilterInterfaceReturnType(Type $type): bool
-    {
-        try {
-            $expectedReturnType = new ObjectType('\Sylius\Bundle\GridBundle\Builder\Filter\FilterInterface');
-
-            return $expectedReturnType->isSuperTypeOf($type)->yes();
-        } catch (\Throwable $e) {
-        }
-
-        return false;
+        return $errors;
     }
 }

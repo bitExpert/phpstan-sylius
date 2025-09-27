@@ -15,6 +15,9 @@ namespace bitExpert\PHPStan\Sylius\Rule\Grid;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 
+/**
+ * @extends RuleTestCase<ResourceAwareGridNeedsResourceClass>
+ */
 class ResourceAwareGridNeedsResourceClassUnitTest extends RuleTestCase
 {
     protected function getRule(): Rule
