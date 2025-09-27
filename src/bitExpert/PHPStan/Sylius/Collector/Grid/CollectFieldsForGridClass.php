@@ -63,6 +63,11 @@ class CollectFieldsForGridClass extends AbstractGridClassCollector implements Co
         /** @var String_ $fieldName */
         $fieldName = $arg->value;
 
+        // the . means the resource object is passed to the grid field. That means, we can ignore it
+        if ('.' === $fieldName->value) {
+            return null;
+        }
+
         return [$classType->getClassName(), $fieldName->value, $node->getLine()];
     }
 }
