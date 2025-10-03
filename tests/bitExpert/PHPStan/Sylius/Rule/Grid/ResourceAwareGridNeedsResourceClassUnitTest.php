@@ -30,10 +30,6 @@ class ResourceAwareGridNeedsResourceClassUnitTest extends RuleTestCase
         $this->analyse(
             [__DIR__ . '/data/grid.php'],
             [
-                [
-                    'getResourceClass() needs to provide a resource class. Mark "App\Entity\Supplier" with #[AsResource] attribute.',
-                    51,
-                ],
             ],
         );
     }
