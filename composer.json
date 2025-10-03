@@ -45,6 +45,7 @@
     "cs-gitlab": "vendor/bin/php-cs-fixer fix --dry-run --format=gitlab --using-cache=no > gl-cs-fixer.json",
     "cs-fix": "vendor/bin/php-cs-fixer fix",
     "check-license": "vendor/bin/license-checker check",
-    "static-analysis": "vendor/bin/phpstan"
+    "static-analysis": "vendor/bin/phpstan",
+    "test": "vendor/bin/phpunit"
   }
 }
