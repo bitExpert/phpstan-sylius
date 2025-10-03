@@ -18,6 +18,7 @@ use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\Return_;
 use PHPStan\Analyser\Scope;
+use PHPStan\Broker\ClassNotFoundException;
 use PHPStan\Node\MethodReturnStatementsNode;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\Rule;
@@ -77,23 +78,21 @@ readonly class ResourceAwareGridNeedsResourceClass implements Rule
             return [];
         }
 
-        $resourceClass = $this->broker->getClass($resourceClassName);
-        $resourceClassAttributes = $resourceClass->getAttributes();
-        foreach ($resourceClassAttributes as $attribute) {
-            if ('Sylius\Resource\Metadata\AsResource' === $attribute->getName()) {
-                return [];
-            }
+        try {
+            $resourceClass = $this->broker->getClass($resourceClassName);
+        } catch (ClassNotFoundException $e) {
+            $message = \sprintf(
+                'getResourceClass() needs to provide a resource class. Class "%s" not found!',
+                $resourceClassName,
+            );
+
+            return [
+                RuleErrorBuilder::message($message)
+                    ->identifier('sylius.grid.resourceClassRequired')
+                    ->build(),
+            ];
         }
 
-        $message = \sprintf(
-            'getResourceClass() needs to provide a resource class. Mark "%s" with #[AsResource] attribute.',
-            $resourceClass->getName(),
-        );
-
-        return [
-            RuleErrorBuilder::message($message)
-                ->identifier('sylius.grid.resourceClassRequired')
-                ->build(),
-        ];
+        return [];
     }
 }
