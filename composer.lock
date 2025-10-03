@@ -3945,16 +3945,16 @@
         },
         {
             "name": "sylius/grid-bundle",
-            "version": "v1.13.1",
+            "version": "v1.13.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Sylius/SyliusGridBundle.git",
-                "reference": "32f3ca68ff2747045747af0852008fa829330c18"
+                "reference": "88f375332f682132db73fcd6dd8a89cf5106298a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Sylius/SyliusGridBundle/zipball/32f3ca68ff2747045747af0852008fa829330c18",
-                "reference": "32f3ca68ff2747045747af0852008fa829330c18",
+                "url": "https://api.github.com/repos/Sylius/SyliusGridBundle/zipball/88f375332f682132db73fcd6dd8a89cf5106298a",
+                "reference": "88f375332f682132db73fcd6dd8a89cf5106298a",
                 "shasum": ""
             },
             "require": {
@@ -4057,9 +4057,15 @@
             ],
             "support": {
                 "issues": "https://github.com/Sylius/SyliusGridBundle/issues",
-                "source": "https://github.com/Sylius/SyliusGridBundle/tree/v1.13.1"
+                "source": "https://github.com/Sylius/SyliusGridBundle/tree/v1.13.2"
             },
-            "time": "2024-11-29T12:43:51+00:00"
+            "funding": [
+                {
+                    "url": "https://github.com/sylius",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-09-05T04:55:22+00:00"
         },
         {
             "name": "sylius/registry",
