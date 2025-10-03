@@ -1,7 +1,5 @@
 # bitexpert/phpstan-sylius
 
-***This plugin is highly experimental! Do not use in production!***
-
 This package provides some additional features for PHPStan to detect configuration issues in Sylius projects.
 
 ## Requirements
