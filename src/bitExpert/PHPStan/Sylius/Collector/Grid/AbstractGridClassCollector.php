@@ -18,6 +18,19 @@ use PHPStan\Type\Type;
 
 abstract class AbstractGridClassCollector
 {
+    protected function convertSnakeToCamelCase(string $string): string
+    {
+        if (!\str_contains($string, '_')) {
+            return $string;
+        }
+
+        $parts = \explode('_', \strtolower($string));
+        $camel = \array_shift($parts);
+        $camel .= \implode('', \array_map('ucfirst', $parts));
+
+        return $camel;
+    }
+
     protected function scopeIsAbstractGridSubclass(Scope $scope): bool
     {
         try {

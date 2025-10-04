@@ -63,6 +63,6 @@ class CollectFilterForGridClass extends AbstractGridClassCollector implements Co
         /** @var String_ $filterFieldName */
         $filterFieldName = $arg->value;
 
-        return [$classType->getClassName(), $filterFieldName->value, $node->getLine()];
+        return [$classType->getClassName(), $this->convertSnakeToCamelCase($filterFieldName->value), $node->getLine()];
     }
 }
