@@ -68,6 +68,6 @@ class CollectFieldsForGridClass extends AbstractGridClassCollector implements Co
             return null;
         }
 
-        return [$classType->getClassName(), $fieldName->value, $node->getLine()];
+        return [$classType->getClassName(), $this->convertSnakeToCamelCase($fieldName->value), $node->getLine()];
     }
 }

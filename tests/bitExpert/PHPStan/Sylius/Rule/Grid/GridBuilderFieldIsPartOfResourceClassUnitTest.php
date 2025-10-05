@@ -41,8 +41,8 @@ class GridBuilderFieldIsPartOfResourceClassUnitTest extends RuleTestCase
             [__DIR__ . '/data/grid.php'],
             [
                 [
-                    'The field "name" needs to exists as property in resource class "App\Entity\Supplier".',
-                    41,
+                    'The field "name" needs to exists as property in class "App\Entity\Supplier".',
+                    63,
                 ],
             ],
         );

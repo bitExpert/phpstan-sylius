@@ -88,7 +88,8 @@ readonly class GridBuilderFilterIsPartOfResourceClass implements Rule
                     $fieldName = $field[0];
                     $lineNo = $field[1];
 
-                    if (!$resourceClass->hasProperty($fieldName)) {
+                    $getterMethod = 'get' . \ucfirst($fieldName);
+                    if (!$resourceClass->hasProperty($fieldName) && !$resourceClass->hasMethod($getterMethod)) {
                         $message = \sprintf(
                             'The filter field "%s" needs to exists as property in resource class "%s".',
                             $fieldName,
