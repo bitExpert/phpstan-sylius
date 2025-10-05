@@ -6,13 +6,35 @@ namespace App\Entity;
 
 use Sylius\Resource\Model\ResourceInterface;
 
+class Address
+{
+    private $city;
+
+    public function getCity(): string
+    {
+        return $this->city;
+    }
+}
+
 class Supplier implements ResourceInterface
 {
     private int $id;
 
-    public function getId()
+    private Address $address;
+
+    public function getId(): int
     {
         return $this->id;
+    }
+
+    public function getAddress(): Address
+    {
+        return $this->address;
+    }
+
+    public function getVatCode(): string
+    {
+        return 'Method without a property';
     }
 }
 
@@ -39,6 +61,12 @@ final class AdminSupplierGrid extends AbstractGrid implements ResourceAwareGridI
         );
         $gridBuilder->addField(
             StringField::create('name')->setLabel('app.ui.name'),
+        );
+        $gridBuilder->addField(
+            StringField::create('vatCode')->setLabel('app.ui.vatCode'),
+        );
+        $gridBuilder->addField(
+            StringField::create('address.city')->setLabel('app.ui.address.city'),
         );
         $gridBuilder->addField(
             StringField::create('.')->setLabel('app.ui.some_calculated_field'),
