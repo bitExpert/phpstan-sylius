@@ -124,28 +124,31 @@ readonly class GridBuilderFieldIsPartOfResourceClass implements Rule
                                     ->build();
                             }
 
-                            if ($resourceClass->hasProperty($fieldName)) {
-                                $property = $resourceClass->getProperty($fieldName, $scope);
-                                if ($property->hasNativeType()) {
-                                    $resourceClass = $property->getNativeType();
-                                } elseif ($property->hasPHPDocType()) {
-                                    $resourceClass = $property->getPhpDocType();
-                                } elseif (\count($fieldNames) > 0) {
-                                    /** @var ClassReflection $resourceClass */
-                                    $message = \sprintf(
-                                        'Unable to identify the type of the field "%s" in class "%s".',
-                                        $fieldName,
-                                        $resourceClass->getName(),
-                                    );
-
-                                    $errors[] = RuleErrorBuilder::message($message)
-                                        ->identifier('sylius.grid.resourceClassPropertyMissingType')
-                                        ->file($gridFilesMap[$gridClassName])
-                                        ->line($lineNo)
-                                        ->build();
-                                }
-                            } elseif ($resourceClass->hasMethod($getterMethod)) {
+                            try {
                                 $resourceClass = $resourceClass->getMethod($fieldName, $scope)->getReturnType();
+                            } catch (\Exception $e) {
+                                try {
+                                    $property = $resourceClass->getProperty($fieldName, $scope);
+                                    if ($property->hasNativeType()) {
+                                        $resourceClass = $property->getNativeType();
+                                    } elseif ($property->hasPHPDocType()) {
+                                        $resourceClass = $property->getPhpDocType();
+                                    } elseif (\count($fieldNames) > 0) {
+                                        /** @var ClassReflection $resourceClass */
+                                        $message = \sprintf(
+                                            'Unable to identify the type of the field "%s" in class "%s".',
+                                            $fieldName,
+                                            $resourceClass->getName(),
+                                        );
+
+                                        $errors[] = RuleErrorBuilder::message($message)
+                                            ->identifier('sylius.grid.resourceClassPropertyMissingType')
+                                            ->file($gridFilesMap[$gridClassName])
+                                            ->line($lineNo)
+                                            ->build();
+                                    }
+                                } catch (\Exception $e) {
+                                }
                             }
                         }
                     }
