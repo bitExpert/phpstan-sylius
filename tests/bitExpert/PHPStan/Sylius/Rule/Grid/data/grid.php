@@ -42,7 +42,6 @@ namespace App\Grid;
 
 use App\Entity\Supplier;
 use Sylius\Bundle\GridBundle\Builder\Field\StringField;
-use Sylius\Bundle\GridBundle\Builder\Filter\Filter;
 use Sylius\Bundle\GridBundle\Builder\Filter\StringFilter;
 use Sylius\Bundle\GridBundle\Builder\GridBuilderInterface;
 use Sylius\Bundle\GridBundle\Grid\AbstractGrid;
@@ -76,7 +75,7 @@ final class AdminSupplierGrid extends AbstractGrid implements ResourceAwareGridI
             StringFilter::create('name'), // Filter::create('name', 'string'),
         );
         $gridBuilder->addFilter(
-            StringFilter::create('virtual-field', ['name']),
+            StringFilter::create('virtual-field', ['name', 'address.city']),
         );
     }
 

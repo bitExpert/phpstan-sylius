@@ -42,7 +42,7 @@ class GridBuilderFieldIsPartOfResourceClassUnitTest extends RuleTestCase
             [
                 [
                     'The field "name" needs to exists as property in class "App\Entity\Supplier".',
-                    64,
+                    63,
                 ],
             ],
         );
