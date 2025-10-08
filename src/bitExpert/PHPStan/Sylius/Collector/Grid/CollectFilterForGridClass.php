@@ -14,15 +14,17 @@ namespace bitExpert\PHPStan\Sylius\Collector\Grid;
 
 use PhpParser\Node;
 use PhpParser\Node\Arg;
+use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Identifier;
+use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Scalar\String_;
 use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
 use PHPStan\Type\ObjectType;
 
 /**
- * @implements Collector<StaticCall, array{string, string, int}>
+ * @implements Collector<StaticCall, array{string, array{string}, int}>
  */
 class CollectFilterForGridClass extends AbstractGridClassCollector implements Collector
 {
@@ -58,11 +60,61 @@ class CollectFilterForGridClass extends AbstractGridClassCollector implements Co
         }
         $classType = new ObjectType($classReflection->getName());
 
-        /** @var Arg $arg */
-        $arg = $node->args[0];
-        /** @var String_ $filterFieldName */
-        $filterFieldName = $arg->value;
+        // first check if the various filter implementations have defined custom fields to filter on
+        $filterFields = [];
+        /** @var FullyQualified $nodeClass */
+        $nodeClass = $node->class;
+        if ('Sylius\\Bundle\\GridBundle\\Builder\\Filter\\StringFilter' === $nodeClass->name) {
+            if (isset($node->args[1]) && $node->args[1] instanceof Arg) {
+                /** @var Array_ $array */
+                $array = $node->args[1]->value;
+                foreach ($array->items as $item) {
+                    /** @var String_ $value */
+                    $value = $item->value;
+                    $filterFields[] = $this->convertSnakeToCamelCase($value->value);
+                }
+            }
+        } elseif ('Sylius\\Bundle\\GridBundle\\Builder\\Filter\\SelectFilter' === $nodeClass->name) {
+            if (isset($node->args[3])) {
+                /** @var Arg $arg */
+                $arg = $node->args[3];
+                /** @var String_ $value */
+                $value = $arg->value;
+                $filterFields[] = $this->convertSnakeToCamelCase($value->value);
+            }
+        } elseif ('Sylius\\Bundle\\GridBundle\\Builder\\Filter\\ExistsFilter' === $nodeClass->name) {
+            if (isset($node->args[1])) {
+                /** @var Arg $arg */
+                $arg = $node->args[1];
+                /** @var String_ $value */
+                $value = $arg->value;
+                $filterFields[] = $this->convertSnakeToCamelCase($value->value);
+            }
+        } elseif ('Sylius\\Bundle\\GridBundle\\Builder\\Filter\\EntityFilter' === $nodeClass->name) {
+            if (isset($node->args[3]) && $node->args[3] instanceof Arg) {
+                /** @var Array_ $array */
+                $array = $node->args[3]->value;
+                foreach ($array->items as $item) {
+                    /** @var String_ $value */
+                    $value = $item->value;
+                    $filterFields[] = $this->convertSnakeToCamelCase($value->value);
+                }
+            }
+        }
 
-        return [$classType->getClassName(), $this->convertSnakeToCamelCase($filterFieldName->value), $node->getLine()];
+        // if no $filterFields have been found, we fallback to the first parameter passed to the create() method
+        if ((0 === \count($filterFields)) && isset($node->args[0])) {
+            /** @var Arg $arg */
+            $arg = $node->args[0];
+            /** @var String_ $value */
+            $value = $arg->value;
+            $filterFields[] = $this->convertSnakeToCamelCase($value->value);
+        }
+
+        if (0 === \count($filterFields)) {
+            return null;
+        }
+
+        return [$classType->getClassName(), $filterFields, $node->getLine()];
     }
 }
