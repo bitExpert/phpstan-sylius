@@ -85,22 +85,24 @@ readonly class GridBuilderFilterIsPartOfResourceClass implements Rule
                 $resourceClass = $this->broker->getClass($resourceClassName);
 
                 foreach ($gridFilterFieldsMap[$gridClassName] as $field) {
-                    $fieldName = $field[0];
+                    $fieldNames = $field[0];
                     $lineNo = $field[1];
 
-                    $getterMethod = 'get' . \ucfirst($fieldName);
-                    if (!$resourceClass->hasProperty($fieldName) && !$resourceClass->hasMethod($getterMethod)) {
-                        $message = \sprintf(
-                            'The filter field "%s" needs to exists as property in resource class "%s".',
-                            $fieldName,
-                            $resourceClassName,
-                        );
+                    foreach ($fieldNames as $fieldName) {
+                        $getterMethod = 'get' . \ucfirst($fieldName);
+                        if (!$resourceClass->hasProperty($fieldName) && !$resourceClass->hasMethod($getterMethod)) {
+                            $message = \sprintf(
+                                'The filter field "%s" needs to exists as property in resource class "%s".',
+                                $fieldName,
+                                $resourceClassName,
+                            );
 
-                        $errors[] = RuleErrorBuilder::message($message)
-                            ->identifier('sylius.grid.resourceClassMissingFilter')
-                            ->file($gridFilesMap[$gridClassName])
-                            ->line($lineNo)
-                            ->build();
+                            $errors[] = RuleErrorBuilder::message($message)
+                                ->identifier('sylius.grid.resourceClassMissingFilter')
+                                ->file($gridFilesMap[$gridClassName])
+                                ->line($lineNo)
+                                ->build();
+                        }
                     }
                 }
             }
