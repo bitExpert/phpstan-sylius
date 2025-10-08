@@ -16,3 +16,6 @@ parameters:
         -
             message: '~Cannot call~'
             path: src/bitExpert/PHPStan/Sylius/Rule/Grid/GridBuilderFieldIsPartOfResourceClass.php
+        -
+            message: '~Cannot call~'
+            path: src/bitExpert/PHPStan/Sylius/Rule/Grid/GridBuilderFilterIsPartOfResourceClass.php
