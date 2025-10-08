@@ -1,5 +1,10 @@
 # bitexpert/phpstan-sylius
 
+[![Build Status](https://github.com/bitExpert/phpstan-sylius/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/bitExpert/phpstan-sylius/actions)
+[![installs on Packagist](https://img.shields.io/packagist/dt/bitexpert/phpstan-sylius)](https://packagist.org/packages/bitexpert/phpstan-sylius/)
+[![Mastodon Follow](https://img.shields.io/mastodon/follow/109408681246972700?domain=https://rheinneckar.social)](https://rheinneckar.social/@bitexpert)
+
+
 This package provides some additional features for PHPStan to detect configuration issues in Sylius projects.
 
 ## Requirements
