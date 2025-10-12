@@ -12,22 +12,25 @@ declare(strict_types=1);
 
 namespace bitExpert\PHPStan\Sylius\Collector\Grid;
 
+use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\FilterRegistry;
 use PhpParser\Node;
-use PhpParser\Node\Arg;
-use PhpParser\Node\Expr\Array_;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name\FullyQualified;
-use PhpParser\Node\Scalar\String_;
 use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
 use PHPStan\Type\ObjectType;
+use PHPStan\Type\Type;
 
 /**
- * @implements Collector<StaticCall, array{string, array{string}, int}>
+ * @implements Collector<StaticCall, array{string, non-empty-array<string>, -1|int<1, max>}>
  */
-class CollectFilterForGridClass extends AbstractGridClassCollector implements Collector
+final class CollectFilterForGridClass extends AbstractGridClassCollector implements Collector
 {
+    public function __construct(private readonly FilterRegistry $filterRegistry)
+    {
+    }
+
     /**
      * @return class-string
      */
@@ -64,51 +67,12 @@ class CollectFilterForGridClass extends AbstractGridClassCollector implements Co
         $filterFields = [];
         /** @var FullyQualified $nodeClass */
         $nodeClass = $node->class;
-        if ('Sylius\\Bundle\\GridBundle\\Builder\\Filter\\StringFilter' === $nodeClass->name) {
-            if (isset($node->args[1]) && $node->args[1] instanceof Arg) {
-                /** @var Array_ $array */
-                $array = $node->args[1]->value;
-                foreach ($array->items as $item) {
-                    /** @var String_ $value */
-                    $value = $item->value;
-                    $filterFields[] = $this->convertSnakeToCamelCase($value->value);
-                }
-            }
-        } elseif ('Sylius\\Bundle\\GridBundle\\Builder\\Filter\\SelectFilter' === $nodeClass->name) {
-            if (isset($node->args[3])) {
-                /** @var Arg $arg */
-                $arg = $node->args[3];
-                /** @var String_ $value */
-                $value = $arg->value;
-                $filterFields[] = $this->convertSnakeToCamelCase($value->value);
-            }
-        } elseif ('Sylius\\Bundle\\GridBundle\\Builder\\Filter\\ExistsFilter' === $nodeClass->name) {
-            if (isset($node->args[1])) {
-                /** @var Arg $arg */
-                $arg = $node->args[1];
-                /** @var String_ $value */
-                $value = $arg->value;
-                $filterFields[] = $this->convertSnakeToCamelCase($value->value);
-            }
-        } elseif ('Sylius\\Bundle\\GridBundle\\Builder\\Filter\\EntityFilter' === $nodeClass->name) {
-            if (isset($node->args[3]) && $node->args[3] instanceof Arg) {
-                /** @var Array_ $array */
-                $array = $node->args[3]->value;
-                foreach ($array->items as $item) {
-                    /** @var String_ $value */
-                    $value = $item->value;
-                    $filterFields[] = $this->convertSnakeToCamelCase($value->value);
-                }
-            }
-        }
 
-        // if no $filterFields have been found, we fallback to the first parameter passed to the create() method
-        if ((0 === \count($filterFields)) && isset($node->args[0])) {
-            /** @var Arg $arg */
-            $arg = $node->args[0];
-            /** @var String_ $value */
-            $value = $arg->value;
-            $filterFields[] = $this->convertSnakeToCamelCase($value->value);
+        foreach ($this->filterRegistry->getFilters() as $filter) {
+            if ($filter->supports($nodeClass)) {
+                $filterFields = $filter->getFilterFields($node);
+                break;
+            }
         }
 
         if (0 === \count($filterFields)) {
@@ -116,5 +80,10 @@ class CollectFilterForGridClass extends AbstractGridClassCollector implements Co
         }
 
         return [$classType->getClassName(), $filterFields, $node->getLine()];
+    }
+
+    protected function isFilterInterfaceReturnType(Type $type): bool
+    {
+        return $this->isSubtypeOf($type, '\Sylius\Bundle\GridBundle\Builder\Filter\FilterInterface');
     }
 }

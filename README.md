@@ -38,12 +38,15 @@ The following rules have been implemented:
 - Rule to check if resource classes defined in AbstractGrid::getResourceClass() exist
 - Rule to check that configured grid fields belong to the configured resource class
 - Rule to check that configured filter fields belong to the configured resource class
+  - custom filter types are supported
 - Rule to check that grid classes configured via the `Index` attribute exist
 
 Current assumptions:
-- Resource entities are configured via attributes
 - Grids are configured by extending the `Sylius\Bundle\GridBundle\Grid\AbstractGrid` class
-- Grid field and filter configuration is using the factory classes from the Grid Bundle
+
+### Custom filter types
+
+To include your custom filter type in the checks, implement the `bitExpert\PHPStan\Sylius\Collector\Grid\Filter\FilterNode` interface and add a service to your `phpstan.neon` file and tag it with the `phpstan.sylius.grid.filter` tag.
 
 ## Contribute
 
@@ -58,4 +61,3 @@ Check out [the contributing guide](CONTRIBUTING.md) to find out how, as well as 
 ## License
 
 PHPStan Sylius Extension is released under the MIT License.
-

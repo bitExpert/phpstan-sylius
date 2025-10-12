@@ -25,7 +25,7 @@ use PHPStan\Type\ObjectType;
 /**
  * @implements Collector<MethodReturnStatementsNode, array{string, string, int}>
  */
-class CollectRessourceClassForGridClass implements Collector
+final class CollectRessourceClassForGridClass implements Collector
 {
     /**
      * @return class-string

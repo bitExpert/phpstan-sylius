@@ -18,19 +18,6 @@ use PHPStan\Type\Type;
 
 abstract class AbstractGridClassCollector
 {
-    protected function convertSnakeToCamelCase(string $string): string
-    {
-        if (!\str_contains($string, '_')) {
-            return $string;
-        }
-
-        $parts = \explode('_', \strtolower($string));
-        $camel = \array_shift($parts);
-        $camel .= \implode('', \array_map('ucfirst', $parts));
-
-        return $camel;
-    }
-
     protected function scopeIsAbstractGridSubclass(Scope $scope): bool
     {
         try {
@@ -48,17 +35,7 @@ abstract class AbstractGridClassCollector
         return false;
     }
 
-    protected function isFieldInterfaceReturnType(Type $type): bool
-    {
-        return $this->isSuperTypeOf($type, '\Sylius\Bundle\GridBundle\Builder\Field\FieldInterface');
-    }
-
-    protected function isFilterInterfaceReturnType(Type $type): bool
-    {
-        return $this->isSuperTypeOf($type, '\Sylius\Bundle\GridBundle\Builder\Filter\FilterInterface');
-    }
-
-    private function isSuperTypeOf(Type $type, string $superType): bool
+    protected function isSubtypeOf(Type $type, string $superType): bool
     {
         try {
             $expectedReturnType = new ObjectType($superType);
