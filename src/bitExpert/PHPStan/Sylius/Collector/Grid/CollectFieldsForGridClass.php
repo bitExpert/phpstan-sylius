@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace bitExpert\PHPStan\Sylius\Collector\Grid;
 
+use bitExpert\PHPStan\Util\PropertyName;
 use PhpParser\Node;
 use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\StaticCall;
@@ -20,11 +21,12 @@ use PhpParser\Node\Scalar\String_;
 use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
 use PHPStan\Type\ObjectType;
+use PHPStan\Type\Type;
 
 /**
  * @implements Collector<StaticCall, array{string, string, int}>
  */
-class CollectFieldsForGridClass extends AbstractGridClassCollector implements Collector
+final class CollectFieldsForGridClass extends AbstractGridClassCollector implements Collector
 {
     /**
      * @return class-string
@@ -68,6 +70,11 @@ class CollectFieldsForGridClass extends AbstractGridClassCollector implements Co
             return null;
         }
 
-        return [$classType->getClassName(), $this->convertSnakeToCamelCase($fieldName->value), $node->getLine()];
+        return [$classType->getClassName(), PropertyName::convertSnakeToCamelCase($fieldName->value), $node->getLine()];
+    }
+
+    protected function isFieldInterfaceReturnType(Type $type): bool
+    {
+        return $this->isSubtypeOf($type, '\Sylius\Bundle\GridBundle\Builder\Field\FieldInterface');
     }
 }

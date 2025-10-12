@@ -14,6 +14,34 @@ services:
 		tags:
 			- phpstan.collector
 	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Filter\FilterRegistryFactory
+
+	syliusFilterTypeRegistry:
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Filter\DefaultFilterRegistry
+		factory: @bitExpert\PHPStan\Sylius\Collector\Grid\Filter\FilterRegistryFactory::createRegistry
+	-
 		class: bitExpert\PHPStan\Sylius\Collector\Grid\CollectFilterForGridClass
+		arguments:
+			filterRegistry: @syliusFilterTypeRegistry
 		tags:
 			- phpstan.collector
+	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Filter\EntityFilter
+		tags:
+			- phpstan.sylius.grid.filter
+	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Filter\ExistsFilter
+		tags:
+			- phpstan.sylius.grid.filter
+	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Filter\Filter
+		tags:
+			- phpstan.sylius.grid.filter
+	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Filter\SelectFilter
+		tags:
+			- phpstan.sylius.grid.filter
+	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Filter\StringFilter
+		tags:
+			- phpstan.sylius.grid.filter

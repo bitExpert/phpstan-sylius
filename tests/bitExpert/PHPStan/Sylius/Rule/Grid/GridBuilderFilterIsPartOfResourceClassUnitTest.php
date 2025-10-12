@@ -14,6 +14,12 @@ namespace bitExpert\PHPStan\Sylius\Rule\Grid;
 
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectFilterForGridClass;
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectRessourceClassForGridClass;
+use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\DefaultFilterRegistry;
+use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\EntityFilter;
+use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\ExistsFilter;
+use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\Filter;
+use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\SelectFilter;
+use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\StringFilter;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 
@@ -29,9 +35,16 @@ class GridBuilderFilterIsPartOfResourceClassUnitTest extends RuleTestCase
 
     protected function getCollectors(): array
     {
+        $filters = [];
+        $filters[] = new EntityFilter();
+        $filters[] = new ExistsFilter();
+        $filters[] = new Filter();
+        $filters[] = new SelectFilter();
+        $filters[] = new StringFilter();
+
         return [
             new CollectRessourceClassForGridClass(),
-            new CollectFilterForGridClass(),
+            new CollectFilterForGridClass(new DefaultFilterRegistry($filters)),
         ];
     }
 
