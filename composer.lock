@@ -3669,78 +3669,42 @@
             "time": "2024-10-20T05:08:20+00:00"
         },
         {
-            "name": "sylius-labs/polyfill-symfony-event-dispatcher",
-            "version": "v1.2.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/SyliusLabs/PolyfillSymfonyEventDispatcher.git",
-                "reference": "d55984be2edb9c2289e5bd8e575c0a3c905a6be2"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/SyliusLabs/PolyfillSymfonyEventDispatcher/zipball/d55984be2edb9c2289e5bd8e575c0a3c905a6be2",
-                "reference": "d55984be2edb9c2289e5bd8e575c0a3c905a6be2",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^8.1",
-                "symfony/event-dispatcher": "^5.4 || ^6.4 || ^7.0",
-                "symfony/event-dispatcher-contracts": "^1.1 || ^2.0 || ^3.0"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "SyliusLabs\\Polyfill\\Symfony\\EventDispatcher\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Grzegorz Sadowski",
-                    "email": "sadowskigp@gmail.com"
-                }
-            ],
-            "description": "Symfony EventDispatcher Polyfill",
-            "support": {
-                "issues": "https://github.com/SyliusLabs/PolyfillSymfonyEventDispatcher/issues",
-                "source": "https://github.com/SyliusLabs/PolyfillSymfonyEventDispatcher/tree/v1.2.0"
-            },
-            "time": "2024-03-04T12:52:51+00:00"
-        },
-        {
             "name": "sylius/grid-bundle",
-            "version": "v1.14.1",
+            "version": "v1.15.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Sylius/SyliusGridBundle.git",
-                "reference": "cb7082fd671aec38d9b984ac8d09cd3d330538c4"
+                "reference": "e1383c0ce867bdd9e2e89f16e1b5ec976120d808"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Sylius/SyliusGridBundle/zipball/cb7082fd671aec38d9b984ac8d09cd3d330538c4",
-                "reference": "cb7082fd671aec38d9b984ac8d09cd3d330538c4",
+                "url": "https://api.github.com/repos/Sylius/SyliusGridBundle/zipball/e1383c0ce867bdd9e2e89f16e1b5ec976120d808",
+                "reference": "e1383c0ce867bdd9e2e89f16e1b5ec976120d808",
                 "shasum": ""
             },
             "require": {
-                "php": "^8.1",
-                "sylius-labs/polyfill-symfony-event-dispatcher": "^1.0",
+                "php": "^8.2",
                 "sylius/registry": "^1.5",
-                "symfony/config": "^6.4 || ^7.0",
-                "symfony/dependency-injection": "^6.4 || ^7.0",
+                "symfony/config": "^6.4 || ^7.2 || ^8.0",
+                "symfony/dependency-injection": "^6.4 || ^7.2 || ^8.0",
                 "symfony/deprecation-contracts": "^2.2 || ^3.1",
-                "symfony/event-dispatcher": "^6.4 || ^7.0",
-                "symfony/form": "^6.4 || ^7.0",
-                "symfony/framework-bundle": "^6.4 || ^7.0",
-                "symfony/http-kernel": "^6.4 || ^7.0",
-                "symfony/options-resolver": "^6.4 || ^7.0",
-                "symfony/property-access": "^6.4 || ^7.0",
-                "symfony/validator": "^6.4 || ^7.0",
+                "symfony/event-dispatcher": "^6.4 || ^7.2 || ^8.0",
+                "symfony/form": "^6.4 || ^7.2 || ^8.0",
+                "symfony/framework-bundle": "^6.4 || ^7.2 || ^8.0",
+                "symfony/http-kernel": "^6.4 || ^7.2 || ^8.0",
+                "symfony/options-resolver": "^6.4 || ^7.2 || ^8.0",
+                "symfony/property-access": "^6.4 || ^7.2 || ^8.0",
+                "symfony/validator": "^6.4 || ^7.2 || ^8.0",
                 "webmozart/assert": "^1.9"
             },
             "conflict": {
+                "badev/pagerfanta-bundle": "<4.4",
+                "doctrine/dbal": "<2.11",
+                "doctrine/doctrine-bundle": "<2.0",
+                "doctrine/orm": "<2.8",
+                "doctrine/persistence": "<2.0",
+                "doctrine/phpcr-odm": "<1.5",
+                "jackalope/jackalope-doctrine-dbal": "<2.0",
                 "pagerfanta/core": "<3.7",
                 "pagerfanta/doctrine-dbal-adapter": "<3.7",
                 "pagerfanta/doctrine-orm-adapter": "<3.7",
@@ -3752,39 +3716,45 @@
                 "sylius/grid": "self.version"
             },
             "require-dev": {
-                "doctrine/doctrine-bundle": "^1.12 || ^2.0",
-                "doctrine/orm": "^2.8",
-                "doctrine/persistence": "^1.3 || ^2.0 || ^3.1",
+                "babdev/pagerfanta-bundle": "^4.4",
+                "doctrine/dbal": "^2.11 || ^3.0 || ^4.0",
+                "doctrine/doctrine-bundle": "^2.0 || ^3.0 || ^4.0",
+                "doctrine/orm": "^2.8 || ^3.0",
+                "doctrine/persistence": "^1.3 || ^2.0 || ^3.1 || ^4.0",
                 "doctrine/phpcr-odm": "^1.5 || ^2.0",
                 "jackalope/jackalope-doctrine-dbal": "^2.0",
-                "lchrusciel/api-test-case": "^5.0",
-                "matthiasnoback/symfony-config-test": "^5.1",
-                "matthiasnoback/symfony-dependency-injection-test": "^5.1",
+                "matthiasnoback/symfony-config-test": "^6.1",
+                "matthiasnoback/symfony-dependency-injection-test": "^6.1",
                 "pagerfanta/pagerfanta": "^3.7 || ^4.0",
-                "pamil/phpspec-skip-example-extension": "^4.2",
-                "phpspec/phpspec": "^7.2",
+                "phpstan/extension-installer": "^1.4",
                 "phpstan/phpstan": "^2.0",
                 "phpstan/phpstan-phpunit": "^2.0",
+                "phpstan/phpstan-symfony": "^2.0",
                 "phpstan/phpstan-webmozart-assert": "^2.0",
-                "phpunit/phpunit": "^9.5",
-                "rector/custom-phpspec-to-phpunit": "^0.6.2",
+                "phpunit/phpunit": "^11.0",
                 "rector/rector": "^2.0",
                 "sylius-labs/coding-standard": "^4.0",
-                "sylius/resource-bundle": "^1.12",
-                "symfony/console": "^6.4 || ^7.0",
-                "symfony/css-selector": "^6.4 || ^7.0",
-                "symfony/dotenv": "^6.4 || ^7.0",
+                "symfony/browser-kit": "^6.4 || ^7.2 || ^8.0",
+                "symfony/console": "^6.4 || ^7.2 || ^8.0",
+                "symfony/css-selector": "^6.4 || ^7.2 || ^8.0",
+                "symfony/dotenv": "^6.4 || ^7.2 || ^8.0",
                 "symfony/maker-bundle": "^1.36",
                 "symfony/polyfill-mbstring": "<1.22.0 || >1.22.0",
-                "symfony/twig-bundle": "^6.4 || ^7.0",
+                "symfony/security-csrf": "^6.4 || ^7.2 || ^8.0",
+                "symfony/translation": "^6.4 || ^7.2 || ^8.0",
+                "symfony/twig-bundle": "^6.4 || ^7.2 || ^8.0",
+                "symplify/easy-coding-standard": "^13.0",
                 "twig/twig": "^2.12 || ^3.0",
-                "vimeo/psalm": "^5.23"
+                "zenstruck/foundry": "^2.8"
             },
             "suggest": {
                 "sylius/currency-bundle": "^1.7"
             },
             "type": "symfony-bundle",
             "extra": {
+                "symfony": {
+                    "require": "7.4.*"
+                },
                 "branch-alias": {
                     "dev-master": "1.11-dev"
                 }
@@ -3826,7 +3796,7 @@
             ],
             "support": {
                 "issues": "https://github.com/Sylius/SyliusGridBundle/issues",
-                "source": "https://github.com/Sylius/SyliusGridBundle/tree/v1.14.1"
+                "source": "https://github.com/Sylius/SyliusGridBundle/tree/v1.15.0"
             },
             "funding": [
                 {
@@ -3834,7 +3804,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-10-20T13:15:01+00:00"
+            "time": "2026-01-29T15:38:54+00:00"
         },
         {
             "name": "sylius/registry",
