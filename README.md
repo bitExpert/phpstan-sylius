@@ -39,7 +39,8 @@ The following rules have been implemented:
 - Rule to check that configured grid fields belong to the configured resource class
 - Rule to check that configured filter fields belong to the configured resource class
   - custom filter types are supported
-- Rule to check that grid classes configured via the `Index` attribute exist
+- Rule to check that grid class configured via the `Index` attribute exists
+- Rule to check that form type configured via the `AsResource` attribute exists
 
 Current assumptions:
 - Grids are configured by extending the `Sylius\Bundle\GridBundle\Grid\AbstractGrid` class

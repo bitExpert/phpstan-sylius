@@ -23,7 +23,7 @@ use PHPStan\Type\Constant\ConstantStringType;
 /**
  * @implements Rule<InClassNode>
  */
-class IndexOperationGridRule implements Rule
+class ResourceAttributeNeedsFormTypeRule implements Rule
 {
     public function __construct(private ReflectionProvider $broker)
     {
@@ -47,20 +47,20 @@ class IndexOperationGridRule implements Rule
 
         $resourceClassAttributes = $classReflection->getAttributes();
         foreach ($resourceClassAttributes as $attribute) {
-            if ('Sylius\Resource\Metadata\Index' === $attribute->getName()) {
+            if ('Sylius\Resource\Metadata\AsResource' === $attribute->getName()) {
                 /** @var array<string, ConstantStringType> $argumentTypes */
                 $argumentTypes = $attribute->getArgumentTypes();
-                if (isset($argumentTypes['grid'])) {
-                    $gridClass = $argumentTypes['grid']->getValue();
+                if (isset($argumentTypes['formType'])) {
+                    $formType = $argumentTypes['formType']->getValue();
 
                     try {
-                        $this->broker->getClass($gridClass);
+                        $this->broker->getClass($formType);
                     } catch (\Throwable $e) {
-                        $message = \sprintf('Grid class "%s" not found!', $gridClass);
+                        $message = \sprintf('Form Type "%s" not found!', $formType);
 
                         return [
                             RuleErrorBuilder::message($message)
-                                ->identifier('sylius.resource.gridClassNotFound')
+                                ->identifier('sylius.resource.formTypeNotFound')
                                 ->build(),
                         ];
                     }
