@@ -10,6 +10,7 @@ parameters:
         - tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid.php
         - tests/bitExpert/PHPStan/Sylius/Rule/Grid//data/grid_needs_resource_model.php
         - tests/bitExpert/PHPStan/Sylius/Rule/Grid//data/grid_needs_resource_model_attr.php
+        - tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity.php
     fileExtensions:
         - php
     ignoreErrors:
