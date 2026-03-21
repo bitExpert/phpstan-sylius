@@ -14,6 +14,7 @@ namespace bitExpert\PHPStan\Sylius\Rule\Grid;
 
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 /**
  * @extends RuleTestCase<ResourceAwareGridNeedsResourceClass>
@@ -25,11 +26,30 @@ class ResourceAwareGridNeedsResourceClassUnitTest extends RuleTestCase
         return new ResourceAwareGridNeedsResourceClass($this->createReflectionProvider());
     }
 
-    public function testRule(): void
+    #[Test]
+    public function ruleForClassmethods(): void
     {
         $this->analyse(
-            [__DIR__ . '/data/grid.php'],
+            [__DIR__ . '/data/grid_needs_resource_model.php'],
             [
+                [
+                    'Resource class "App\Entity\SupplierNotFound" not found!',
+                    41,
+                ],
+            ],
+        );
+    }
+
+    #[Test]
+    public function ruleForAttr(): void
+    {
+        $this->analyse(
+            [__DIR__ . '/data/grid_needs_resource_model_attr.php'],
+            [
+                [
+                    'Resource class "App\Entity\SupplierNotFound" not found!',
+                    24,
+                ],
             ],
         );
     }

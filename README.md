@@ -35,7 +35,7 @@ See [here](https://phpstan.org/config-reference) what options PHPStan allows you
 This PHPStan extension works for both Sylius plugins and Sylius application projects.
 
 The following rules have been implemented:
-- Rule to check if resource classes defined in AbstractGrid::getResourceClass() exist
+- Rule to check if resource classes defined either via AbstractGrid::getResourceClass() or the #AsGrid attribute exist
 - Rule to check that configured grid fields belong to the configured resource class
 - Rule to check that configured filter fields belong to the configured resource class
   - custom filter types are supported

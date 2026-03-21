@@ -52,25 +52,38 @@ final class CollectRessourceClassForGridClass implements Collector
             return null;
         }
 
-        // we are only interested in the getResourceClass() method
+        // new Resource Bundle logic: check the #AsGrid attribute of the class
+        $attributes = $classReflection->getAttributes();
+        foreach ($attributes as $attribute) {
+            if ('Sylius\Component\Grid\Attribute\AsGrid' === $attribute->getName()) {
+                $argumentTypes = $attribute->getArgumentTypes();
+                foreach ($argumentTypes as $key => $argumentType) {
+                    if ('resourceClass' === $key) {
+                        $resourceClassName = $argumentType->getConstantStrings()[0]->getValue();
+
+                        return [$classType->getClassName(), $resourceClassName, $node->getLine()];
+                    }
+                }
+            }
+        }
+
+        // old Resource Bundle logic: find the getResourceClass() method to get the resource class
         $methodReflection = $node->getMethodReflection();
-        if ('getResourceClass' !== $methodReflection->getName()) {
-            return null;
-        }
+        if ('getResourceClass' === $methodReflection->getName()) {
+            $resourceClassName = '';
+            /** @var Return_[] $statements */
+            $statements = $node->getStatements();
+            if ($statements[0]->expr instanceof String_) {
+                $resourceClassName = $statements[0]->expr->value;
+            } elseif ($statements[0]->expr instanceof ClassConstFetch) {
+                /** @var FullyQualified $class */
+                $class = $statements[0]->expr->class;
+                $resourceClassName = $class->name;
+            }
 
-        $resourceClassName = '';
-        /** @var Return_[] $statements */
-        $statements = $node->getStatements();
-        if ($statements[0]->expr instanceof String_) {
-            $resourceClassName = $statements[0]->expr->value;
-        } elseif ($statements[0]->expr instanceof ClassConstFetch) {
-            /** @var FullyQualified $class */
-            $class = $statements[0]->expr->class;
-            $resourceClassName = $class->name;
-        }
-
-        if (!empty($resourceClassName)) {
-            return [$classType->getClassName(), $resourceClassName, $node->getLine()];
+            if (!empty($resourceClassName)) {
+                return [$classType->getClassName(), $resourceClassName, $node->getLine()];
+            }
         }
 
         return null;
