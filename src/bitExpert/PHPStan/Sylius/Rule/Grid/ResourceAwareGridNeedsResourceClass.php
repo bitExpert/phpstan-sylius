@@ -53,28 +53,46 @@ readonly class ResourceAwareGridNeedsResourceClass implements Rule
         if (null === $classReflection) {
             return [];
         }
+
         $parentType = new ObjectType('\Sylius\Bundle\GridBundle\Grid\AbstractGrid');
         $classType = new ObjectType($classReflection->getName());
         if (!$parentType->isSuperTypeOf($classType)->yes()) {
             return [];
         }
 
-        // we are only interested in the getResourceClass() method
-        $methodReflection = $node->getMethodReflection();
-        if ('getResourceClass' !== $methodReflection->getName()) {
-            return [];
+        $resourceClassName = '';
+
+        // new Resource Bundle logic: check the #AsGrid attribute of the class
+        $attributes = $classReflection->getAttributes();
+        foreach ($attributes as $attribute) {
+            if ('Sylius\Component\Grid\Attribute\AsGrid' === $attribute->getName()) {
+                $argumentTypes = $attribute->getArgumentTypes();
+                if (isset($argumentTypes['resourceClass'])) {
+                    $resourceClassName = $argumentTypes['resourceClass']->getConstantStrings()[0]->getValue();
+                    break;
+                }
+            }
         }
 
-        $resourceClassName = '';
-        /** @var Return_[] $statements */
-        $statements = $node->getStatements();
-        if ($statements[0]->expr instanceof String_) {
-            $resourceClassName = $statements[0]->expr->value;
-        } elseif ($statements[0]->expr instanceof ClassConstFetch) {
-            /** @var FullyQualified $class */
-            $class = $statements[0]->expr->class;
-            $resourceClassName = $class->name;
-        } else {
+        // old Resource Bundle logic: find the getResourceClass() method to get the resource class
+        if (empty($resourceClassName)) {
+            $methodReflection = $node->getMethodReflection();
+            if ('getResourceClass' === $methodReflection->getName()) {
+                /** @var Return_[] $statements */
+                $statements = $node->getStatements();
+                if ($statements[0]->expr instanceof String_) {
+                    $resourceClassName = $statements[0]->expr->value;
+                } elseif ($statements[0]->expr instanceof ClassConstFetch) {
+                    /** @var FullyQualified $class */
+                    $class = $statements[0]->expr->class;
+                    $resourceClassName = $class->name;
+                } else {
+                    return [];
+                }
+            }
+        }
+
+        if (empty($resourceClassName)) {
             return [];
         }
 
@@ -82,7 +100,7 @@ readonly class ResourceAwareGridNeedsResourceClass implements Rule
             $resourceClass = $this->broker->getClass($resourceClassName);
         } catch (ClassNotFoundException $e) {
             $message = \sprintf(
-                'getResourceClass() needs to provide a resource class. Class "%s" not found!',
+                'Resource class "%s" not found!',
                 $resourceClassName,
             );
 
@@ -92,6 +110,8 @@ readonly class ResourceAwareGridNeedsResourceClass implements Rule
                     ->build(),
             ];
         }
+
+        \error_log("6 OK\n", 3, '/tmp/sylius.log');
 
         return [];
     }
