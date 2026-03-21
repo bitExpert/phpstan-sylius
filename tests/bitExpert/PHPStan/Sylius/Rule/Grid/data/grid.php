@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Grid;
 
+use App\Entity\Status;
 use App\Entity\Supplier;
 use Sylius\Bundle\GridBundle\Builder\Field\StringField;
+use Sylius\Bundle\GridBundle\Builder\Filter\EnumFilter;
 use Sylius\Bundle\GridBundle\Builder\Filter\StringFilter;
 use Sylius\Bundle\GridBundle\Builder\GridBuilderInterface;
 use Sylius\Bundle\GridBundle\Grid\AbstractGrid;
@@ -36,7 +38,10 @@ final class AdminSupplierGrid extends AbstractGrid implements ResourceAwareGridI
             StringField::create('.')->setLabel('app.ui.some_calculated_field'),
         );
         $gridBuilder->addFilter(
-            StringFilter::create('name'), // Filter::create('name', 'string'),
+            StringFilter::create('name'),
+        );
+        $gridBuilder->addFilter(
+            EnumFilter::create('status', Status::class, false, 'status123'),
         );
         $gridBuilder->addFilter(
             StringFilter::create('virtual-field', ['name', 'address.city']),
