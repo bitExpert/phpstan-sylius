@@ -111,8 +111,6 @@ readonly class ResourceAwareGridNeedsResourceClass implements Rule
             ];
         }
 
-        \error_log("6 OK\n", 3, '/tmp/sylius.log');
-
         return [];
     }
 }

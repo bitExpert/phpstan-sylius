@@ -6,6 +6,12 @@ namespace App\Entity;
 
 use Sylius\Resource\Model\ResourceInterface;
 
+enum Status: string
+{
+    case ACTIVE = 'active';
+    case INACTIVE = 'inactive';
+}
+
 class Address
 {
     private $city;
@@ -22,6 +28,8 @@ class Supplier implements ResourceInterface
 
     private Address $address;
 
+    private Status $status;
+
     public function getId(): int
     {
         return $this->id;
@@ -30,6 +38,11 @@ class Supplier implements ResourceInterface
     public function getAddress(): Address
     {
         return $this->address;
+    }
+
+    public function getStatus(): Status
+    {
+        return $this->status;
     }
 
     public function getVatCode(): string

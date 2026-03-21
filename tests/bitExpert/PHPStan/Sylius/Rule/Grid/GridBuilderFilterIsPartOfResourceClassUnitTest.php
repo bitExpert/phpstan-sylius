@@ -16,6 +16,7 @@ use bitExpert\PHPStan\Sylius\Collector\Grid\CollectFilterForGridClass;
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectRessourceClassForGridClass;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\DefaultFilterRegistry;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\EntityFilter;
+use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\EnumFilter;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\ExistsFilter;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\Filter;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\SelectFilter;
@@ -37,6 +38,7 @@ class GridBuilderFilterIsPartOfResourceClassUnitTest extends RuleTestCase
     {
         $filters = [];
         $filters[] = new EntityFilter();
+        $filters[] = new EnumFilter();
         $filters[] = new ExistsFilter();
         $filters[] = new Filter();
         $filters[] = new SelectFilter();
@@ -55,11 +57,15 @@ class GridBuilderFilterIsPartOfResourceClassUnitTest extends RuleTestCase
             [
                 [
                     'The filter field "name" needs to exists as property in resource class "App\Entity\Supplier".',
-                    39,
+                    41,
+                ],
+                [
+                    'The filter field "status123" needs to exists as property in resource class "App\Entity\Supplier".',
+                    44,
                 ],
                 [
                     'The filter field "name" needs to exists as property in resource class "App\Entity\Supplier".',
-                    42,
+                    47,
                 ],
             ],
         );
