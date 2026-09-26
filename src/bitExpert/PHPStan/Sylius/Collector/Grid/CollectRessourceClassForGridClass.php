@@ -46,11 +46,7 @@ final class CollectRessourceClassForGridClass implements Collector
         if (null === $classReflection) {
             return null;
         }
-        $parentType = new ObjectType('\Sylius\Bundle\GridBundle\Grid\AbstractGrid');
         $classType = new ObjectType($classReflection->getName());
-        if (!$parentType->isSuperTypeOf($classType)->yes()) {
-            return null;
-        }
 
         // new Grid Bundle logic: check the #AsGrid attribute of the class
         $attributes = $classReflection->getAttributes();
@@ -68,6 +64,11 @@ final class CollectRessourceClassForGridClass implements Collector
         }
 
         // old Grid Bundle logic: find the getResourceClass() method to get the resource class
+        $parentType = new ObjectType('\Sylius\Bundle\GridBundle\Grid\AbstractGrid');
+        if (!$parentType->isSuperTypeOf($classType)->yes()) {
+            return null;
+        }
+
         $methodReflection = $node->getMethodReflection();
         if ('getResourceClass' === $methodReflection->getName()) {
             $resourceClassName = '';

@@ -61,8 +61,8 @@ final class CollectFieldsForGridClass extends AbstractGridClassCollector impleme
         if (null === $classReflection) {
             return null;
         }
-        $classType = new ObjectType($classReflection->getName());
 
+        $classType = new ObjectType($classReflection->getName());
         /** @var FullyQualified $nodeClass */
         $nodeClass = $node->class;
 
@@ -89,6 +89,12 @@ final class CollectFieldsForGridClass extends AbstractGridClassCollector impleme
 
     protected function isFieldInterfaceReturnType(Type $type): bool
     {
+        // new Grid Bundle logic since v1.16.0
+        if ($this->isSubtypeOf($type, '\Sylius\Component\Grid\Builder\Field\FieldInterface')) {
+            return true;
+        }
+
+        // old Grid Bundle logic
         return $this->isSubtypeOf($type, '\Sylius\Bundle\GridBundle\Builder\Field\FieldInterface');
     }
 }

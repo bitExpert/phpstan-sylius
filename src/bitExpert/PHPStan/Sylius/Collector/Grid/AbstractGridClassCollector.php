@@ -21,23 +21,18 @@ abstract class AbstractGridClassCollector
     protected function scopeIsGrid(Scope $scope): bool
     {
         try {
-            // new Grid Bundle logic: Grid classes are marked with #AsGrid attribute
             $classReflection = $scope->getClassReflection();
+
             if (null !== $classReflection) {
+                // new Grid Bundle logic: Grid classes are marked with #AsGrid attribute
                 $attributes = $classReflection->getAttributes();
                 foreach ($attributes as $attribute) {
                     if ('Sylius\Component\Grid\Attribute\AsGrid' === $attribute->getName()) {
                         return true;
                     }
                 }
-            }
-        } catch (\Throwable $e) {
-        }
 
-        try {
-            // old Grid Bundle logic: check for subclasses of \Sylius\Bundle\GridBundle\Grid\AbstractGrid
-            $classReflection = $scope->getClassReflection();
-            if (null !== $classReflection) {
+                // old Grid Bundle logic: check for subclasses of \Sylius\Bundle\GridBundle\Grid\AbstractGrid
                 $parentType = new ObjectType('\Sylius\Bundle\GridBundle\Grid\AbstractGrid');
                 $classType = new ObjectType($classReflection->getName());
 

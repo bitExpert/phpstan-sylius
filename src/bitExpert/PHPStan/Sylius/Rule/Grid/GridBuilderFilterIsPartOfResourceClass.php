@@ -18,7 +18,6 @@ use PhpParser\Node;
 use PhpParser\Node\Expr\StaticCall;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\CollectedDataNode;
-use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
@@ -90,68 +89,24 @@ readonly class GridBuilderFilterIsPartOfResourceClass implements Rule
                     $lineNo = $field[1];
 
                     foreach ($fieldNames as $fieldName) {
-                        if (!\str_contains($fieldName, '.')) {
-                            $getterMethod = 'get' . \ucfirst($fieldName);
-                            if (!$resourceClass->hasProperty($fieldName) && !$resourceClass->hasMethod($getterMethod)) {
-                                $message = \sprintf(
-                                    'The filter field "%s" needs to exists as property in resource class "%s".',
-                                    $fieldName,
-                                    $resourceClassName,
-                                );
+                        // filters do not support recursion via .
+                        if (\str_contains($fieldName, '.')) {
+                            continue;
+                        }
 
-                                $errors[] = RuleErrorBuilder::message($message)
-                                    ->identifier('sylius.grid.resourceClassMissingFilter')
-                                    ->file($gridFilesMap[$gridClassName])
-                                    ->line($lineNo)
-                                    ->build();
-                            }
-                        } else {
-                            // recursive property check
-                            $fieldNames = \explode('.', $fieldName);
-                            while (\count($fieldNames) > 0) {
-                                $fieldName = \array_shift($fieldNames);
-                                $getterMethod = 'get' . \ucfirst($fieldName);
-                                if (!$resourceClass->hasProperty($fieldName) && !$resourceClass->hasMethod($getterMethod)) {
-                                    $message = \sprintf(
-                                        'The filter field "%s" needs to exists as property in resource class "%s".',
-                                        $fieldName,
-                                        $resourceClassName,
-                                    );
+                        $getterMethod = 'get' . \ucfirst($fieldName);
+                        if (!$resourceClass->hasProperty($fieldName) && !$resourceClass->hasMethod($getterMethod)) {
+                            $message = \sprintf(
+                                'The filter field "%s" needs to exists as property in resource class "%s".',
+                                $fieldName,
+                                $resourceClassName,
+                            );
 
-                                    $errors[] = RuleErrorBuilder::message($message)
-                                        ->identifier('sylius.grid.resourceClassMissingFilter')
-                                        ->file($gridFilesMap[$gridClassName])
-                                        ->line($lineNo)
-                                        ->build();
-                                }
-
-                                try {
-                                    $resourceClass = $resourceClass->getMethod($fieldName, $scope)->getReturnType();
-                                } catch (\Exception $e) {
-                                    try {
-                                        $property = $resourceClass->getProperty($fieldName, $scope);
-                                        if ($property->hasNativeType()) {
-                                            $resourceClass = $property->getNativeType();
-                                        } elseif ($property->hasPHPDocType()) {
-                                            $resourceClass = $property->getPhpDocType();
-                                        } elseif (\count($fieldNames) > 0) {
-                                            /** @var ClassReflection $resourceClass */
-                                            $message = \sprintf(
-                                                'Unable to identify the type of the field "%s" in class "%s".',
-                                                $fieldName,
-                                                $resourceClass->getName(),
-                                            );
-
-                                            $errors[] = RuleErrorBuilder::message($message)
-                                                ->identifier('sylius.grid.resourceClassPropertyMissingType')
-                                                ->file($gridFilesMap[$gridClassName])
-                                                ->line($lineNo)
-                                                ->build();
-                                        }
-                                    } catch (\Exception $e) {
-                                    }
-                                }
-                            }
+                            $errors[] = RuleErrorBuilder::message($message)
+                                ->identifier('sylius.grid.resourceClassMissingFilter')
+                                ->file($gridFilesMap[$gridClassName])
+                                ->line($lineNo)
+                                ->build();
                         }
                     }
                 }
