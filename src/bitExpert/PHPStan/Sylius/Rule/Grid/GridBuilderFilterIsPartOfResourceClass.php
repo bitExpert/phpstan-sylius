@@ -31,7 +31,7 @@ readonly class GridBuilderFilterIsPartOfResourceClass implements Rule
     }
 
     /**
-     * @return class-string
+     * @return class-string<CollectedDataNode>
      */
     public function getNodeType(): string
     {

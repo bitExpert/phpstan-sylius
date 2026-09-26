@@ -29,6 +29,9 @@ class IndexOperationNeedsGridClassRule implements Rule
     {
     }
 
+    /**
+     * @return class-string<InClassNode>
+     */
     public function getNodeType(): string
     {
         return InClassNode::class;

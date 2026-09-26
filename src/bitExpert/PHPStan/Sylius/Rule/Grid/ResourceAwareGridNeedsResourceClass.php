@@ -44,7 +44,7 @@ readonly class ResourceAwareGridNeedsResourceClass implements Rule
     }
 
     /**
-     * @return class-string
+     * @return class-string<InClassNode>
      */
     public function getNodeType(): string
     {

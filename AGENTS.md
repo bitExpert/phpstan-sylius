@@ -532,7 +532,9 @@ second lane is not done.
   ever reaching PHPStan. Deleting the guard without fixing the docblock turns
   `$node->get()` into `Call to an undefined method PhpParser\Node::get()`.
 - **Action**: when adding a rule, keep `@implements` and `getNodeType()` in agreement, and skip the
-  defensive `instanceof` guard — it can mask a real annotation mistake instead of catching one.
+  defensive `instanceof` guard — it can mask a real annotation mistake instead of catching one. Every
+  rule's `getNodeType()` now carries `@return class-string<ConcreteNodeType>`, so PHPStan rejects a
+  mismatch between the two; do not widen that back to a bare `class-string`, or the safety net goes away.
 
 ### 3. Node/collector coverage is opt-in
 - A field or filter class with **no** matching node is silently never validated — no error, no warning.

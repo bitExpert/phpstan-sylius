@@ -34,7 +34,7 @@ readonly class GridBuilderFieldIsPartOfResourceClass implements Rule
     }
 
     /**
-     * @return class-string
+     * @return class-string<CollectedDataNode>
      */
     public function getNodeType(): string
     {
@@ -187,7 +187,7 @@ readonly class GridBuilderFieldIsPartOfResourceClass implements Rule
             if ($property->hasPHPDocType()) {
                 return $this->toClassReflection($property->getPhpDocType());
             }
-        } catch (MissingPropertyFromReflectionException $e) {
+        } catch (MissingPropertyFromReflectionException) {
             // Reported by the caller as a missing property on the parent segment.
         }
 
