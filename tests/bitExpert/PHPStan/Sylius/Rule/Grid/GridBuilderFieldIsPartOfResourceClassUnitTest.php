@@ -59,6 +59,23 @@ class GridBuilderFieldIsPartOfResourceClassUnitTest extends RuleTestCase
                     'The field "name" needs to exists as property in class "App\Entity\Supplier".',
                     29,
                 ],
+                [
+                    // This field is declared after the recursive "address.city" field.
+                    // Walking the recursive path replaced the resource class with the
+                    // type of the last resolved segment, so this field was looked up on
+                    // App\Entity\Address instead of App\Entity\Supplier and no error was
+                    // ever reported for it.
+                    'The field "plainFieldAfterDottedField" needs to exists as property in class "App\Entity\Supplier".',
+                    38,
+                ],
+                [
+                    // Third segment of a recursive field. Once the walk leaves the
+                    // ClassReflection it queried a Type, and Type::hasProperty()
+                    // answers with a TrinaryLogic whose cast to bool is always true,
+                    // so every segment past the first silently passed.
+                    'The field "missingThirdSegment" needs to exists as property in class "App\Entity\Supplier".',
+                    56,
+                ],
             ],
         );
     }

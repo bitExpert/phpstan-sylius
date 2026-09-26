@@ -35,6 +35,9 @@ final class AdminSupplierGrid extends AbstractGrid implements ResourceAwareGridI
             StringField::create('address.city')->setLabel('app.ui.address.city'),
         );
         $gridBuilder->addField(
+            StringField::create('plainFieldAfterDottedField')->setLabel('app.ui.plain'),
+        );
+        $gridBuilder->addField(
             StringField::create('.')->setLabel('app.ui.some_calculated_field'),
         );
         $gridBuilder->addFilter(
@@ -45,6 +48,12 @@ final class AdminSupplierGrid extends AbstractGrid implements ResourceAwareGridI
         );
         $gridBuilder->addFilter(
             StringFilter::create('virtual-field', ['name', 'address.city']),
+        );
+        $gridBuilder->addField(
+            StringField::create('address.country.isoCode')->setLabel('app.ui.isoCode'),
+        );
+        $gridBuilder->addField(
+            StringField::create('address.country.missingThirdSegment')->setLabel('app.ui.missing'),
         );
     }
 

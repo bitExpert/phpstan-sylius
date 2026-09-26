@@ -57,15 +57,15 @@ class GridBuilderFilterIsPartOfResourceClassUnitTest extends RuleTestCase
             [
                 [
                     'The filter field "name" needs to exists as property in resource class "App\Entity\Supplier".',
-                    41,
-                ],
-                [
-                    'The filter field "status123" needs to exists as property in resource class "App\Entity\Supplier".',
                     44,
                 ],
                 [
-                    'The filter field "name" needs to exists as property in resource class "App\Entity\Supplier".',
+                    'The filter field "status123" needs to exists as property in resource class "App\Entity\Supplier".',
                     47,
+                ],
+                [
+                    'The filter field "name" needs to exists as property in resource class "App\Entity\Supplier".',
+                    50,
                 ],
             ],
         );

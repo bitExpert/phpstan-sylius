@@ -12,13 +12,30 @@ enum Status: string
     case INACTIVE = 'inactive';
 }
 
+class Country
+{
+    private string $isoCode;
+
+    public function getIsoCode(): string
+    {
+        return $this->isoCode;
+    }
+}
+
 class Address
 {
     private $city;
 
+    private Country $country;
+
     public function getCity(): string
     {
         return $this->city;
+    }
+
+    public function getCountry(): Country
+    {
+        return $this->country;
     }
 }
 
