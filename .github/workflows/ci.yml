@@ -7,11 +7,22 @@ on:
 
 jobs:
   run:
+    name: php ${{ matrix.php-versions }} / grid-bundle ${{ matrix.grid-bundle }}
     runs-on: ${{ matrix.operating-system }}
     strategy:
+      fail-fast: false
       matrix:
         operating-system: ['ubuntu-latest']
         php-versions: ['8.2']
+        # The extension supports grid-bundle >= 1.15. Sylius 1.16 moved the
+        # builder interfaces into Sylius\Component\Grid and deprecated the
+        # Sylius\Bundle\GridBundle equivalents, so both sides of that boundary
+        # need explicit coverage. Constraints are pinned per lane instead of
+        # reusing the committed lockfile, otherwise bumping the lock to 1.16
+        # would silently turn the low lane into a second high lane.
+        grid-bundle:
+          - '^1.15 <1.16'
+          - '^1.16'
         coveralls: [ false ]
     steps:
       - name: Checkout repo
@@ -26,7 +37,12 @@ jobs:
           extensions: bcmath, gd
 
       - name: Install Composer dependencies
-        run: composer install
+        run: |
+          composer require --dev "sylius/grid-bundle:${{ matrix.grid-bundle }}" --no-update --no-interaction
+          composer update --no-interaction --no-progress
+
+      - name: Show resolved dependency versions
+        run: composer show sylius/grid-bundle phpstan/phpstan phpunit/phpunit
 
       - name: Composer license check
         run: composer check-license
