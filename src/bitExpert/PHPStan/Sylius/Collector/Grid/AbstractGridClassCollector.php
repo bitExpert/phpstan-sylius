@@ -18,10 +18,24 @@ use PHPStan\Type\Type;
 
 abstract class AbstractGridClassCollector
 {
-    protected function scopeIsAbstractGridSubclass(Scope $scope): bool
+    protected function scopeIsGrid(Scope $scope): bool
     {
         try {
-            // run the checks only for subclasses of \Sylius\Bundle\GridBundle\Grid\AbstractGrid
+            // new Grid Bundle logic: Grid classes are marked with #AsGrid attribute
+            $classReflection = $scope->getClassReflection();
+            if (null !== $classReflection) {
+                $attributes = $classReflection->getAttributes();
+                foreach ($attributes as $attribute) {
+                    if ('Sylius\Component\Grid\Attribute\AsGrid' === $attribute->getName()) {
+                        return true;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+        }
+
+        try {
+            // old Grid Bundle logic: check for subclasses of \Sylius\Bundle\GridBundle\Grid\AbstractGrid
             $classReflection = $scope->getClassReflection();
             if (null !== $classReflection) {
                 $parentType = new ObjectType('\Sylius\Bundle\GridBundle\Grid\AbstractGrid');

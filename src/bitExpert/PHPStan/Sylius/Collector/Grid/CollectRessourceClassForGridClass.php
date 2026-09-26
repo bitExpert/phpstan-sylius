@@ -52,7 +52,7 @@ final class CollectRessourceClassForGridClass implements Collector
             return null;
         }
 
-        // new Resource Bundle logic: check the #AsGrid attribute of the class
+        // new Grid Bundle logic: check the #AsGrid attribute of the class
         $attributes = $classReflection->getAttributes();
         foreach ($attributes as $attribute) {
             if ('Sylius\Component\Grid\Attribute\AsGrid' === $attribute->getName()) {
@@ -67,7 +67,7 @@ final class CollectRessourceClassForGridClass implements Collector
             }
         }
 
-        // old Resource Bundle logic: find the getResourceClass() method to get the resource class
+        // old Grid Bundle logic: find the getResourceClass() method to get the resource class
         $methodReflection = $node->getMethodReflection();
         if ('getResourceClass' === $methodReflection->getName()) {
             $resourceClassName = '';

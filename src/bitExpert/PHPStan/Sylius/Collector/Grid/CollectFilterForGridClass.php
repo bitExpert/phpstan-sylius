@@ -49,7 +49,7 @@ final class CollectFilterForGridClass extends AbstractGridClassCollector impleme
             return null;
         }
 
-        if (!$this->scopeIsAbstractGridSubclass($scope)) {
+        if (!$this->scopeIsGrid($scope)) {
             return null;
         }
 
@@ -84,6 +84,12 @@ final class CollectFilterForGridClass extends AbstractGridClassCollector impleme
 
     protected function isFilterInterfaceReturnType(Type $type): bool
     {
+        // new Grid Bundle logic since v1.16.0
+        if ($this->isSubtypeOf($type, '\Sylius\Component\Grid\Builder\Field\FieldInterface')) {
+            return true;
+        }
+
+        // old Grid Bundle logic
         return $this->isSubtypeOf($type, '\Sylius\Bundle\GridBundle\Builder\Filter\FilterInterface');
     }
 }

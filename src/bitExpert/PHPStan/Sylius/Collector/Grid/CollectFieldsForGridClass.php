@@ -46,7 +46,7 @@ final class CollectFieldsForGridClass extends AbstractGridClassCollector impleme
             return null;
         }
 
-        if (!$this->scopeIsAbstractGridSubclass($scope)) {
+        if (!$this->scopeIsGrid($scope)) {
             return null;
         }
 
