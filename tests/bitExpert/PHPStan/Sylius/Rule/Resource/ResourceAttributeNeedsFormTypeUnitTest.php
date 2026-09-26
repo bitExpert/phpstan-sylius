@@ -39,4 +39,24 @@ class ResourceAttributeNeedsFormTypeUnitTest extends RuleTestCase
             ],
         );
     }
+
+    /**
+     * Only the single constant string is reported. The object, constant-array
+     * and integer arguments must be skipped, which they were not before: the
+     * rule called Type::getValue() on them, which raised an internal error and
+     * aborted the analysis.
+     */
+    #[Test]
+    public function ruleSkipsNonConstantFormTypeArgument(): void
+    {
+        $this->analyse(
+            [__DIR__ . '/data/entity_non_constant_attribute.php'],
+            [
+                [
+                    'Form Type "FormClassNotExists" not found!',
+                    75,
+                ],
+            ],
+        );
+    }
 }
