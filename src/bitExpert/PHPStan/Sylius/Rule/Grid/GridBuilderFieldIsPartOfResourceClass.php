@@ -19,6 +19,7 @@ use PhpParser\Node\Expr\StaticCall;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\CollectedDataNode;
 use PHPStan\Reflection\ClassReflection;
+use PHPStan\Reflection\MissingPropertyFromReflectionException;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
@@ -109,6 +110,7 @@ readonly class GridBuilderFieldIsPartOfResourceClass implements Rule
                         $fieldNames = \explode('.', $fieldName);
                         while (\count($fieldNames) > 0) {
                             $fieldName = \array_shift($fieldNames);
+
                             $getterMethod = 'get' . \ucfirst($fieldName);
                             if (!$resourceClass->hasProperty($fieldName) && !$resourceClass->hasMethod($getterMethod)) {
                                 $message = \sprintf(
@@ -125,7 +127,7 @@ readonly class GridBuilderFieldIsPartOfResourceClass implements Rule
                             }
 
                             try {
-                                $resourceClass = $resourceClass->getMethod($fieldName, $scope)->getReturnType();
+                                $resourceClass = $resourceClass->getMethod($getterMethod, $scope)->getOnlyVariant()->getReturnType();
                             } catch (\Exception $e) {
                                 try {
                                     $property = $resourceClass->getProperty($fieldName, $scope);
@@ -148,6 +150,14 @@ readonly class GridBuilderFieldIsPartOfResourceClass implements Rule
                                             ->build();
                                     }
                                 } catch (\Exception $e) {
+                                    /* @phpstan-ignore phpstanApi.class */
+                                    if ($e instanceof MissingPropertyFromReflectionException) {
+                                        $errors[] = RuleErrorBuilder::message($e->getMessage())
+                                            ->identifier('sylius.grid.resourceClassPropertyMissingType')
+                                            ->file($gridFilesMap[$gridClassName])
+                                            ->line($lineNo)
+                                            ->build();
+                                    }
                                 }
                             }
                         }

@@ -61,8 +61,8 @@ final class CollectFilterForGridClass extends AbstractGridClassCollector impleme
         if (null === $classReflection) {
             return null;
         }
-        $classType = new ObjectType($classReflection->getName());
 
+        $classType = new ObjectType($classReflection->getName());
         // first check if the various filter implementations have defined custom fields to filter on
         $filterFields = [];
         /** @var FullyQualified $nodeClass */
@@ -85,7 +85,7 @@ final class CollectFilterForGridClass extends AbstractGridClassCollector impleme
     protected function isFilterInterfaceReturnType(Type $type): bool
     {
         // new Grid Bundle logic since v1.16.0
-        if ($this->isSubtypeOf($type, '\Sylius\Component\Grid\Builder\Field\FieldInterface')) {
+        if ($this->isSubtypeOf($type, '\Sylius\Component\Grid\Builder\Filter\FilterInterface')) {
             return true;
         }
 
