@@ -11,9 +11,40 @@ services:
 		tags:
 			- phpstan.collector
 	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Field\FieldRegistryFactory
+	syliusFieldTypeRegistry:
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Field\DefaultFieldRegistry
+		factory: @bitExpert\PHPStan\Sylius\Collector\Grid\Field\FieldRegistryFactory::createRegistry
+	-
 		class: bitExpert\PHPStan\Sylius\Collector\Grid\CollectFieldsForGridClass
+		arguments:
+			fieldRegistry: @syliusFieldTypeRegistry
 		tags:
 			- phpstan.collector
+	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Field\StringFieldNode
+		tags:
+			- phpstan.sylius.grid.field
+	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Field\DateTimeFieldNode
+		tags:
+			- phpstan.sylius.grid.field
+	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Field\TwigFieldNode
+		tags:
+			- phpstan.sylius.grid.field
+	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Field\EnumFieldNode
+		tags:
+			- phpstan.sylius.grid.field
+	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Field\CallableFieldNode
+		tags:
+			- phpstan.sylius.grid.field
+	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Field\GenericFieldNode
+		tags:
+			- phpstan.sylius.grid.field
 	-
 		class: bitExpert\PHPStan\Sylius\Collector\Grid\Filter\FilterRegistryFactory
 

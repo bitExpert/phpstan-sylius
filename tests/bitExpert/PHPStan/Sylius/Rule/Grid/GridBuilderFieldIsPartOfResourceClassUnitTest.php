@@ -14,6 +14,13 @@ namespace bitExpert\PHPStan\Sylius\Rule\Grid;
 
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectFieldsForGridClass;
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectRessourceClassForGridClass;
+use bitExpert\PHPStan\Sylius\Collector\Grid\Field\CallableFieldNode;
+use bitExpert\PHPStan\Sylius\Collector\Grid\Field\DateTimeFieldNode;
+use bitExpert\PHPStan\Sylius\Collector\Grid\Field\DefaultFieldRegistry;
+use bitExpert\PHPStan\Sylius\Collector\Grid\Field\EnumFieldNode;
+use bitExpert\PHPStan\Sylius\Collector\Grid\Field\GenericFieldNode;
+use bitExpert\PHPStan\Sylius\Collector\Grid\Field\StringFieldNode;
+use bitExpert\PHPStan\Sylius\Collector\Grid\Field\TwigFieldNode;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 
@@ -29,9 +36,17 @@ class GridBuilderFieldIsPartOfResourceClassUnitTest extends RuleTestCase
 
     protected function getCollectors(): array
     {
+        $fields = [];
+        $fields[] = new StringFieldNode();
+        $fields[] = new DateTimeFieldNode();
+        $fields[] = new TwigFieldNode();
+        $fields[] = new EnumFieldNode();
+        $fields[] = new CallableFieldNode();
+        $fields[] = new GenericFieldNode();
+
         return [
             new CollectRessourceClassForGridClass(),
-            new CollectFieldsForGridClass(),
+            new CollectFieldsForGridClass(new DefaultFieldRegistry($fields)),
         ];
     }
 

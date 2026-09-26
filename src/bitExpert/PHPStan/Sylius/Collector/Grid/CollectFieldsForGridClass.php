@@ -12,12 +12,11 @@ declare(strict_types=1);
 
 namespace bitExpert\PHPStan\Sylius\Collector\Grid;
 
-use bitExpert\PHPStan\Util\PropertyName;
+use bitExpert\PHPStan\Sylius\Collector\Grid\Field\FieldRegistry;
 use PhpParser\Node;
-use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Identifier;
-use PhpParser\Node\Scalar\String_;
+use PhpParser\Node\Name\FullyQualified;
 use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
 use PHPStan\Type\ObjectType;
@@ -28,6 +27,10 @@ use PHPStan\Type\Type;
  */
 final class CollectFieldsForGridClass extends AbstractGridClassCollector implements Collector
 {
+    public function __construct(private readonly FieldRegistry $fieldRegistry)
+    {
+    }
+
     /**
      * @return class-string
      */
@@ -60,17 +63,28 @@ final class CollectFieldsForGridClass extends AbstractGridClassCollector impleme
         }
         $classType = new ObjectType($classReflection->getName());
 
-        /** @var Arg $arg */
-        $arg = $node->args[0];
-        /** @var String_ $fieldName */
-        $fieldName = $arg->value;
+        /** @var FullyQualified $nodeClass */
+        $nodeClass = $node->class;
 
-        // the . means the resource object is passed to the grid field. That means, we can ignore it
-        if ('.' === $fieldName->value) {
-            return null;
+        // first check if the various field implementations have defined custom fields to check
+        foreach ($this->fieldRegistry->getFields() as $fieldNode) {
+            if ($fieldNode->supports($nodeClass)) {
+                $fieldNames = $fieldNode->getFieldNames($node);
+
+                if (0 === \count($fieldNames)) {
+                    return null;
+                }
+
+                // the . means the resource object is passed to the grid field. That means, we can ignore it
+                if ('.' === $fieldNames[0]) {
+                    return null;
+                }
+
+                return [$classType->getClassName(), $fieldNames[0], $node->getLine()];
+            }
         }
 
-        return [$classType->getClassName(), PropertyName::convertSnakeToCamelCase($fieldName->value), $node->getLine()];
+        return null;
     }
 
     protected function isFieldInterfaceReturnType(Type $type): bool
