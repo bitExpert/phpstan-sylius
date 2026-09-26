@@ -49,6 +49,10 @@ Current assumptions:
 
 To include your custom filter type in the checks, implement the `bitExpert\PHPStan\Sylius\Collector\Grid\Filter\FilterNode` interface and add a service to your `phpstan.neon` file and tag it with the `phpstan.sylius.grid.filter` tag.
 
+### Custom field types
+
+To include your custom filter type in the checks, implement the `bitExpert\PHPStan\Sylius\Collector\Grid\Field\FieldNode` interface and add a service to your `phpstan.neon` file and tag it with the `phpstan.sylius.grid.field` tag.
+
 ## Contribute
 
 Please feel free to fork and extend existing or add new features and send a pull request with your changes! To establish
