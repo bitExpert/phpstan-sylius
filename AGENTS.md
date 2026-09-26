@@ -9,7 +9,8 @@ This file provides structured context for AI agents (e.g., copilot, Claude, etc.
 - **Package**: `bitexpert/phpstan-sylius`
 - **Type**: PHPStan extension (type: `phpstan-extension` in `composer.json`)
 - **Purpose**: Additional static analysis rules for Sylius projects, validating grid configurations and resource metadata.
-- **Requirements**: PHP ^8.2, PHPStan ^2.1, Sylius ^2.0 (resource-bundle ^1.12, grid-bundle ^1.13).
+- **Requirements**: PHP ^8.2, PHPStan ^2.1. Dev: resource-bundle ^1.12, grid-bundle **^1.15**.
+- **grid-bundle support**: `>= 1.15`. CI exercises both `^1.15 <1.16` and `^1.16`; behaviour differs between them (see [Grid Bundle 1.16](#grid-bundle-116)).
 - **License**: MIT
 
 ### Installation & Usage
@@ -48,7 +49,7 @@ src/
    │  │  ├─ FilterRegistry.php                       # Interface
    │  │  ├─ FilterRegistryFactory.php                # DI factory for filter registry
    │  │  ├─ DefaultFilterRegistry.php                # Concrete registry
-   │  │  └─ *Filter.php                              # EntityFilter, EnumFilter, ExistsFilter, Filter, SelectFilter, StringFilter
+   │  │  └─ *.php                                    # EntityFilter, EnumFilter, ExistsFilter, SelectFilter, StringFilter, BooleanFilter, DateFilter, MoneyFilter, Filter (catch-all)
    │  │
    │  └─ Rule/
    │     ├─ Grid/
@@ -62,6 +63,8 @@ src/
 ```
 
 **Note**: `CollectRessourceClassForGridClass.php` contains a typo: `Ressource` (double `s`), which is preserved for historical compatibility.
+
+**Note**: field nodes carry a `Node` suffix in their class name; filter nodes do **not**. `Field/StringFieldNode.php` vs `Filter/StringFilter.php`.
 
 ---
 
@@ -100,11 +103,17 @@ PHPStan extensions in this project follow a two-phase approach:
 
 This separation improves performance (collectors can run in parallel) and keeps rules focused on analysis rather than parsing.
 
+> **Caution**: `getNodeType()` is authoritative. `GridBuilderFieldIsPartOfResourceClass` and
+> `GridBuilderFilterIsPartOfResourceClass` both return `CollectedDataNode::class` and guard
+> `processNode()` with `if (!$node instanceof CollectedDataNode)`. Their `@implements Rule<StaticCall>`
+> docblocks are **wrong leftovers** — PHPStan cannot catch this because `processNode(Node $node, ...)`
+> takes the broad `Node` type. Trust `getNodeType()`, not the docblock.
+
 ### Rule Execution Flow
 
 | Rule | Node Type | Key Logic |
 |------|-----------|-----------|
-| `ResourceAwareGridNeedsResourceClass` | `MethodReturnStatementsNode` | Checks `getResourceClass()` or `#AsGrid(resourceClass:)` for existing class. |
+| `ResourceAwareGridNeedsResourceClass` | `InClassNode` | Checks `#AsGrid(resourceClass:)` first, then `getResourceClass()` / `ResourceAwareGridInterface`, for an existing class. |
 | `GridBuilderFieldIsPartOfResourceClass` | `CollectedDataNode` | Validates every grid field exists as a property/getter on the resource class. Supports recursive fields (`address.city`). |
 | `GridBuilderFilterIsPartOfResourceClass` | `CollectedDataNode` | Validates every grid filter field exists on resource. Does **not** support recursive checks (dots are skipped). |
 | `IndexOperationNeedsGridClassRule` | `InClassNode` | Validates `#[Index(grid: '...')]` refers to an existing grid class. |
@@ -117,12 +126,13 @@ This separation improves performance (collectors can run in parallel) and keeps 
 ### `ResourceAwareGridNeedsResourceClass`
 
 - **Namespace**: `bitExpert\PHPStan\Sylius\Rule\Grid`
-- **Node type**: `MethodReturnStatementsNode`
-- **Scope**: Only subclasses of `Sylius\Bundle\GridBundle\Grid\AbstractGrid` or classes with `#AsGrid` attribute.
-- **Checks**:
-  - **New API**: `#[Sylius\Component\Grid\Attribute\AsGrid(resourceClass: 'App\Entity\Supplier')]`
-  - **Old API**: `public function getResourceClass(): string { return Supplier::class; }`
+- **Node type**: `InClassNode`
+- **Checks, in order**:
+  1. `#[Sylius\Component\Grid\Attribute\AsGrid(resourceClass: 'App\Entity\Supplier')]` — the attribute wins over any method, because 1.16 grids may declare no methods at all.
+  2. Legacy `public function getResourceClass(): string { return Supplier::class; }` (also the `ResourceAwareGridInterface` contract).
+  3. Class/subclass of `Sylius\Bundle\GridBundle\Grid\AbstractGrid`.
 - **Error**: `sylius.grid.resourceClassRequired` → `Resource class "%s" not found!`
+- **Note**: reads the attribute argument from the AST, not the PHPDoc-resolved value, so it also fires under 1.16 where the class exposes no `getResourceClass()`.
 
 ---
 
@@ -144,6 +154,18 @@ This separation improves performance (collectors can run in parallel) and keeps 
   - `sylius.grid.resourceClassMissingProperty`: Field missing as property/getter.
   - `sylius.grid.resourceClassPropertyMissingType`: Unable to identify type for recursive path.
 - **Identifier note**: Grammar intentionally uses "needs to exists" (not "need to exist") in error messages.
+
+#### Invariant: re-resolve the resource class per field
+
+`$resourceClass` is re-resolved from `$resourceClassName` at the **top of every field iteration**, and
+the recursive walk keeps it a `ClassReflection` (`resolveNextClass()` / `toClassReflection()`). Both are load-bearing:
+
+- The recursive branch reassigns `$resourceClass` to the last segment's type. Without the re-resolve, a grid
+  with `address.city` followed by any other field validates the rest of the grid against `App\Entity\Address`.
+- `Type::hasProperty()` is declared on `PHPStan\Type\Type` and returns **`TrinaryLogic`**. Casting that object
+  to bool is *always true*, so a `Type` in that position makes `!$type->hasProperty($x)` always `false` and
+  every remaining segment silently passes. This is a silent-pass bug, not a crash — it only shows up as
+  missing expected errors.
 
 ---
 
@@ -193,6 +215,8 @@ This separation improves performance (collectors can run in parallel) and keeps 
   - `isSubtypeOf(Type $type, string $superType): bool`
     - Returns `true` if `$type` is a subtype of `$superType`.
 - **Usage**: All grid collectors extend this.
+- **Note**: `scopeIsGrid()` does not match traits analysed on their own, because the scope class is the
+  trait itself. Only fields declared in a class/trait that a real grid uses are collected.
 
 ---
 
@@ -212,7 +236,8 @@ This separation improves performance (collectors can run in parallel) and keeps 
 
 - **Type**: `Collector<StaticCall, array{string, string, int}>`
 - **Validates node**:
-  - Must be a static `create()` call.
+  - Must be a static **`create()` or `createForService()`** call (`FACTORY_METHODS`).
+    `CallableField::createForService()` is the only alternative factory in grid-bundle.
   - Must be inside grid scope (`scopeIsGrid`).
   - Return type must be subtype of `Sylius\Component\Grid\Builder\Field\FieldInterface` (new) **or** `Sylius\Bundle\GridBundle\Builder\Field\FieldInterface` (old).
 - **Field resolution**:
@@ -225,7 +250,7 @@ This separation improves performance (collectors can run in parallel) and keeps 
 
 ### `CollectFilterForGridClass`
 
-- **Type**: `Collector<StaticCall, array{string, non-empty-array<string>, int<1, max>}>` (doc declares `-1|positive int` but actual line numbers are positive)
+- **Type**: `Collector<StaticCall, array{string, non-empty-array<string>, -1|int<1, max>}>` (doc declares `-1|positive int` but actual line numbers are positive)
 - **Validates node**:
   - Static `create()` call.
   - Grid scope.
@@ -269,8 +294,9 @@ interface FieldNode {
 
 #### Important Notes
 
-- **All nodes only support the old `Sylius\Bundle\GridBundle` namespace**, even though collectors accept both old and new (`Sylius\Component\Grid`) interfaces.
-- If a project uses the new `Sylius\Component\Grid\Builder\Field\Field` classes, they will **not** be recognized by any field node unless custom nodes are registered.
+- Matching the **bundle** namespace is correct on *both* grid-bundle 1.15 and 1.16 — see
+  [Grid Bundle 1.16](#grid-bundle-116). Do not "fix" these to the `Component` namespace; there is
+  nothing there to match.
 - The conversion helper `PropertyName::convertSnakeToCamelCase()` lowercases the entire string before shifting, so `My_Field` → `myField`.
 
 ---
@@ -295,20 +321,50 @@ interface FilterNode {
 
 #### Built-in Filter Nodes
 
-| Class | Sylius Class Name | Argument Logic | Notes |
-|-------|-------------------|----------------|-------|
-| `EntityFilter` | `Sylius\Bundle\GridBundle\Builder\Filter\EntityFilter` | args[3] if array of strings; fallback to args[0] | Signature likely `create(string, string, bool, ?array)` |
-| `EnumFilter` | `Sylius\Bundle\GridBundle\Builder\Filter\EnumFilter` | args[3] if string; fallback to args[0] | Signature likely `create(string, string, bool, ?string)` |
-| `ExistsFilter` | `Sylius\Bundle\GridBundle\Builder\Filter\ExistsFilter` | args[1] if string; fallback to args[0] | Signature likely `create(string, string)` |
-| `Filter` | `Sylius\Bundle\GridBundle\Builder\Filter\FilterInterface` | args[0] only | **Bug?**: `isSuperTypeOf` check appears inverted (should be `$filterType->isSuperTypeOf($nodeClassType)`). Practically only supports direct interface calls. |
-| `SelectFilter` | `Sylius\Bundle\GridBundle\Builder\Filter\SelectFilter` | args[3] if string; fallback to args[0] | |
-| `StringFilter` | `Sylius\Bundle\GridBundle\Builder\Filter\StringFilter` | args[1] if array of strings; fallback to args[0] | Signature likely `create(string, array|callable)` |
+Signatures below are the real grid-bundle ones; the `create()` first argument is always the filter
+name, and every node falls back to it.
+
+| Class | Sylius Class Name | `create()` signature | Field Argument |
+|-------|-------------------|----------------------|----------------|
+| `EntityFilter` | `...Builder\Filter\EntityFilter` | `create(string $name, string $resourceClass, ?bool $multiple = null, ?array $fields = null)` | args[3] if array of strings; fallback args[0] |
+| `EnumFilter` | `...Builder\Filter\EnumFilter` | `create(string $name, string $enumClass, ?bool $multiple = null, ?string $field = null)` | args[3] if string; fallback args[0] |
+| `BooleanFilter` | `...Builder\Filter\BooleanFilter` | `create(string $name)` | args[0] |
+| `DateFilter` | `...Builder\Filter\DateFilter` | `create(string $name)` | args[0] |
+| `MoneyFilter` | `...Builder\Filter\MoneyFilter` | `create(string $name, string $currencyCode, ?int $scale = null)` | args[0] (currency + scale ignored) |
+| `ExistsFilter` | `...Builder\Filter\ExistsFilter` | `create(string $name, ?string $field = null)` | args[1] if string; fallback args[0] |
+| `SelectFilter` | `...Builder\Filter\SelectFilter` | `create(string $name, array $choices, ?bool $multiple = null, ?string $field = null)` | args[3] if string; fallback args[0] |
+| `StringFilter` | `...Builder\Filter\StringFilter` | `create(string $name, ?array $fields = null, $type = null)` | args[1] if array of strings; fallback args[0] |
+| `Filter` (catch-all) | matches anything that **implements** `FilterInterface` (old *or* new) | `create(string $name, string $type = null)` | args[0] only |
 
 #### Important Notes
 
-- Same limitation as field nodes: **only old bundle namespace** recognized.
-- `Filter` class likely broken: its `supports()` logic is reversed, making it effectively unused.
+- **Registry order matters: keep the catch-all `Filter` node last.** First `supports()` match wins, so an
+  earlier catch-all shadows any node registered after it — in particular a user's custom node. Only the
+  catch-all is interface-based; the others match one concrete class name each, so the built-in set of
+  outcomes is order-independent.
+- The catch-all is the *only* interface-based node, and only `Filter` itself implements `FilterInterface`.
+  `StringFilter`, `BooleanFilter` etc. are plain `final class`es with a static `create()` returning the
+  interface — they are matched by name, never by the catch-all. Anything without a dedicated node is
+  silently unvalidated, which is exactly how `BooleanFilter`/`DateFilter`/`MoneyFilter` went unnoticed.
 - Recursive filter fields (e.g., `address.city`) are **skipped** by the rule, not by the collector.
+
+---
+
+## Grid Bundle 1.16
+
+grid-bundle 1.16 moved the *interfaces* into `Sylius\Component\Grid`, but **every concrete
+`create()` factory class still lives in `Sylius\Bundle\GridBundle\Builder\...`** and returns the new
+interface. In `Sylius\Component\Grid\Builder\Field\` and `...\Filter\` there are only the
+`*Interface` files — no concrete field or filter classes exist there at all.
+
+Consequences:
+- Name-based nodes must keep matching the **bundle** namespace on both lanes.
+- The catch-all `Filter` node must check **both** interfaces, because a legacy `Filter::create()` call
+  on 1.16 returns the new `Sylius\Component\Grid\Builder\Filter\FilterInterface`. With only the legacy
+  interface it matches nothing on 1.16.
+- Fixtures using new-namespace concrete classes would not even parse, so
+  `grid_needs_resource_model_native_interface.php` is excluded from PHPStan in `phpstan.dist.neon`
+  (it only parses on the `>= 1.16` lane).
 
 ---
 
@@ -338,12 +394,12 @@ interface FilterNode {
     - bitExpert\PHPStan\Sylius\Rule\Resource\IndexOperationNeedsGridClassRule
     - bitExpert\PHPStan\Sylius\Rule\Resource\ResourceAttributeNeedsFormTypeRule
   ```
-
 - **Services**:
   - `FieldRegistryFactory` → `syliusFieldTypeRegistry` via `createRegistry()`.
   - `FilterRegistryFactory` → `syliusFilterTypeRegistry`.
   - Collectors (`CollectRessourceClassForGridClass`, `CollectFieldsForGridClass`, `CollectFilterForGridClass`) tagged `phpstan.collector`.
   - All field/filter nodes tagged with `phpstan.sylius.grid.field` / `phpstan.sylius.grid.filter`.
+  - Filter nodes are registered specific-first; the catch-all `Filter` node is deliberately last.
 
 ### Custom Field/Filter Types
 
@@ -351,14 +407,18 @@ To add custom types:
 
 1. Implement `FieldNode` or `FilterNode`.
 2. Register service in `phpstan.neon` with the appropriate tag.
+3. Register it **before** the catch-all `Filter` node if you are also adding an interface-based node.
 
-Example (custom field node):
+Example (custom filter node):
 ```neon
 services:
-  - class: App\PHPStan\CustomFieldNode
+  - class: App\PHPStan\CustomFilterNode
     tags:
-      - phpstan.sylius.grid.field
+      - phpstan.sylius.grid.filter
 ```
+
+`supports()` should match on the concrete class name (`$nodeClass->name`) like the built-in nodes do.
+Prefer that over an interface check: interface-based nodes compete with the catch-all.
 
 ---
 
@@ -370,32 +430,53 @@ services:
 - **Configuration**: `phpunit.xml.dist` (suffix `UnitTest.php`, bootstrap `tests/bootstrap.php`).
 - **Rules** use `PHPStan\Testing\RuleTestCase`.
 - **Utility/Registry** use standard `PHPUnit\Framework\TestCase`.
+- 17 tests total across both lanes.
+
+#### Gotchas that make tests lie
+
+- **`RuleTestCase` asserts only `line: message`, never the file.** A wrong `->file()` in a rule cannot be
+  caught by these tests. Do not add a test that appears to cover file attribution.
+- **`phpunit.xml.dist` sets `stopOnFailure="true"`.** A failing run reports only the tests up to the first
+  failure, so a low test count is not a discovery problem — confirm with `--list-tests`.
+- **Test registries are hand-built.** Each grid rule test overrides `getCollectors()` and assembles its own
+  node list. Registering a node in `extension.neon` alone changes nothing in the tests, so a green suite can
+  pass while the new node is never exercised. Update both, and prove the node is load-bearing by pointing
+  one `FILTER_TYPE`/`FIELD_TYPE` at a wrong class name and confirming the expectation disappears.
+- **Do not bulk-shift fixture line numbers with sequential `str.replace`.** Replacing `46→49` and then
+  `49→52` re-edits the value just written and shifts the wrong entries. Re-derive line numbers from the file.
 
 ### Test Files
 
 | Test File | Purpose | Fixtures |
 |-----------|---------|----------|
 | `PropertyNameUnitTest` | Unit tests for snake → camel conversion | None |
-| `ResourceAttributeNeedsFormTypeUnitTest` | Validates `AsResource` form type existence | `tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity.php` |
-| `ResourceAwareGridNeedsResourceClassUnitTest` | Tests old + new grid API with missing resource class | `grid_needs_resource_model.php`, `grid_needs_resource_model_attr.php` |
+| `ResourceAttributeNeedsFormTypeUnitTest` | Validates `AsResource` form type existence | `Rule/Resource/data/entity.php`, `entity_non_constant_attribute.php` |
+| `IndexOperationNeedsGridClassUnitTest` | Validates `Index` grid reference | `Rule/Resource/data/entity_index.php` |
+| `ResourceAwareGridNeedsResourceClassUnitTest` | Missing resource class (old, attribute, 1.16-native, method-less) | `grid_needs_resource_model.php`, `grid_needs_resource_model_attr.php`, `grid_needs_resource_model_native_interface.php`, `grid_needs_resource_model_no_methods.php` |
 | `ResourceAwareGridNeedsResourceClassValidUnitTest` | Validates correct configurations | `grid_valid.php`, `grid_valid_attr.php` |
-| `GridBuilderFieldIsPartOfResourceClassUnitTest` | Tests invalid field detection | `grid.php` |
+| `GridBuilderFieldIsPartOfResourceClassUnitTest` | Invalid field detection (incl. `createForService`) | `grid.php` |
 | `GridBuilderFieldIsPartOfResourceClassValidUnitTest` | Validates correct grids | `grid_valid.php` |
-| `GridBuilderFilterIsPartOfResourceClassUnitTest` | Tests invalid filter detection | `grid.php` |
+| `GridBuilderFilterIsPartOfResourceClassUnitTest` | Invalid filter detection | `grid.php` |
 | `GridBuilderFilterIsPartOfResourceClassValidUnitTest` | Validates correct grids | `grid_valid.php` |
 | `DefaultFilterRegistryUnitTest` | Registry functionality | None |
 
 ### Fixtures
 
-All fixtures (for analysis) reside under `tests/bitExpert/PHPStan/Sylius/Rule/*/data/`:
-- `entity.php` (Resource): `App\Entity\Status` enum, `Address`, `Supplier` (implements `ResourceInterface`, missing `name` property).
-- `grid.php` (Grid): `AdminSupplierGrid` with invalid field/filter definitions.
-- `grid_valid.php`: Correct grid configuration.
-- `grid_valid_attr.php`: Correct `#AsGrid` usage.
-- `grid_needs_resource_model.php`: Old API with one missing class.
-- `grid_needs_resource_model_attr.php`: `#AsGrid` with one missing class.
+All fixtures (for analysis) reside under `tests/bitExpert/PHPStan/Sylius/Rule/*/data/`.
 
-These files are loaded via `composer.json` `autoload-dev.files` so classes exist during analysis.
+`Rule/Grid/data/` (namespace `App\Entity` / `App\Grid`):
+- `entity.php`: `App\Entity\Status` (enum), `Country`, `Address`, `Supplier` (implements `ResourceInterface`, missing `name`). `Country` and `Address::$country`/`getCountry()` back the three-segment field case.
+- `grid.php`: `AdminSupplierGrid` with invalid field/filter definitions, plus `SomeOtherClass`. Shared by the field *and* filter tests, so any edit shifts expectations in both.
+- `grid_valid.php`, `grid_valid_attr.php`: correct grid configurations.
+- `grid_needs_resource_model.php` / `_attr.php` / `_no_methods.php` / `_native_interface.php`: resource-class detection cases.
+
+`Rule/Resource/data/` (namespace `App\Entity`):
+- `entity.php`: declares a class literally named `entity` (lowercase) implementing `ResourceInterface`.
+- `entity_index.php`: missing `Index(grid:)`.
+- `entity_non_constant_attribute.php`: non-constant attribute argument.
+
+These files are loaded via `composer.json` `autoload-dev.files` so classes exist during analysis, and
+`Rule/Grid/data/grid.php` + `entity.php` are excluded from PHPStan analysis in `phpstan.dist.neon`.
 
 ---
 
@@ -413,13 +494,20 @@ From `composer.json`:
 
 ### CI Pipeline (`.github/workflows/ci.yml`)
 
+Matrix over PHP version × OS × grid-bundle constraint. Each lane runs:
+
 1. Checkout repo
-2. Setup PHP 8.2
-3. Install dependencies
-4. License check
-5. Coding standards
-6. Static analysis
-7. Unit tests
+2. Configure PHP (`shivammathur/setup-php`)
+3. `composer require --dev "sylius/grid-bundle:<constraint>" --no-update` + `composer update`
+4. Show resolved versions — **one `composer show <pkg>` call per package**; `composer show` takes a single
+   package plus an optional version, so passing several names exits `1`
+5. `composer check-license`
+6. `composer cs`
+7. `composer static-analysis`
+8. `composer test`
+
+The two grid-bundle lanes are `^1.15 <1.16` and `^1.16`. Keep both green; a change that only passes the
+second lane is not done.
 
 ### Coding Standards
 
@@ -436,28 +524,39 @@ From `composer.json`:
 - **File**: `CollectRessourceClassForGridClass.php` (`Ressource` double `s`).
 - **Impact**: Must be preserved for BC; do not rename.
 
-### 2. Stale PHPStan Ignore
-- `phpstan.dist.neon` ignores errors in `AbstractGridBuilderRule.php`, but this file **does not exist** in the codebase.
-- **Action**: Can likely be removed.
+### 2. Stale `@implements` docblocks on the two grid rules
+- Both `GridBuilder*IsPartOfResourceClass` rules declare `@implements Rule<StaticCall>` but actually
+  `return CollectedDataNode::class` from `getNodeType()`.
+- **Impact**: Misleads readers about the architecture; harmless at runtime. PHPStan cannot flag it because
+  `processNode(Node $node, ...)` takes the broad `Node` type.
+- **Action**: correct the docblocks (and the now-redundant `instanceof CollectedDataNode` guards).
 
-### 3. Field/Filter Support Limitation
-- **All built-in nodes only support `Sylius\Bundle\GridBundle\*` namespace**, even though collectors accept both old and new (`Sylius\Component\Grid`) interfaces.
-- **Consequence**: Projects using the new component interfaces must register custom nodes.
-- **Recommendation**: Update field/filter nodes to support both namespaces.
+### 3. Node/collector coverage is opt-in
+- A field or filter class with **no** matching node is silently never validated — no error, no warning.
+  The catch-all only covers classes that implement `FilterInterface`, and only `Filter` itself does.
+- **Impact**: `BooleanFilter`, `DateFilter` and `MoneyFilter` were unvalidated until nodes were added for
+  them. When a new grid-bundle factory appears, add a node in the same change, and check the grid-bundle
+  changelog when bumping the floor.
 
-### 4. `Filter` Node Bug
-- `Filter::supports()` logic uses `$nodeClassType->isSuperTypeOf($filterType)` when it should be the reverse.
-- **Consequence**: The generic `Filter` node likely never matches any concrete filter class.
-- **Impact**: May cause some custom filters to be silently skipped.
-
-### 5. Recursive Filter Fields Skipped
+### 4. Recursive Filter Fields Skipped
 - The rule `GridBuilderFilterIsPartOfResourceClass` skips any filter field containing `.` (e.g., `address.city`).
 - **Rationale**: Filters typically do not need recursive access, but this may be overly restrictive.
 - **Consequence**: Users cannot validate recursive filter fields.
 
-### 6. Case Sensitivity in Fixtures
-- Test fixtures use non-standard naming: `tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/entity.php` defines class `App\Entity\entity` (lowercase `entity`).
-- **Impact**: Avoid confusion; stick to PSR-1 naming in new code.
+### 5. Field errors are attributed to the grid's file, not the node's
+- Both grid rules use `$gridFilesMap[$gridClass]`, which is **last-write-wins per grid class** and shared
+  by all fields of that grid.
+- **Impact**: A grid split across multiple files reports every field error against whichever file was seen
+  last. Fields inside a trait are always attributed to the using class, because the node's real file is not
+  recoverable: PHP-Parser 5 exposes only an integer `startFilePos` (no path), and `Scope::getFile()`,
+  `getFunction()->getFileName()` and `->getDeclaringClass()->getFileName()` all return the using class file.
+- **Action**: not fixable without a broader file-identity design; `RuleTestCase` cannot even assert it.
+
+### 6. Lowercase fixture class name
+- `tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity.php` declares a class named `entity` (lowercase)
+  in namespace `App\Entity`.
+- **Impact**: Avoid confusion; stick to PSR-1 naming in new fixtures. (The `Rule/Grid/data/entity.php`
+  fixture is fine — it declares `Status`, `Country`, `Address`, `Supplier`.)
 
 ---
 
@@ -466,7 +565,7 @@ From `composer.json`:
 ### Adding a New Rule
 
 1. Create rule class in `src/bitExpert/PHPStan/Sylius/Rule/...`.
-2. Implement `PHPStan\Rules\Rule<NodeType>`.
+2. Implement `PHPStan\Rules\Rule<NodeType>` — make `@implements` and `getNodeType()` agree.
 3. Register in `extension.neon` under `rules`.
 4. Add test in `tests/.../Rule/.../...UnitTest.php`.
 5. Add fixture if needed.
@@ -482,8 +581,10 @@ From `composer.json`:
 
 1. Implement `FieldNode` or `FilterNode`.
 2. Tag service in `extension.neon` with `phpstan.sylius.grid.field` or `phpstan.sylius.grid.filter`.
-3. Ensure `supports()` correctly checks class name.
-4. Test with appropriate fixtures.
+3. Ensure `supports()` correctly checks the **concrete** class name.
+4. Register before the catch-all `Filter` node.
+5. Add the node to the affected tests' `getCollectors()` too, then prove it is load-bearing with a
+   deliberately wrong class name.
 
 ---
 
