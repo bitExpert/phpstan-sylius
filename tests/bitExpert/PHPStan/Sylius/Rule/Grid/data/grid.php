@@ -6,6 +6,7 @@ namespace App\Grid;
 
 use App\Entity\Status;
 use App\Entity\Supplier;
+use Sylius\Bundle\GridBundle\Builder\Field\CallableField;
 use Sylius\Bundle\GridBundle\Builder\Field\StringField;
 use Sylius\Bundle\GridBundle\Builder\Filter\EnumFilter;
 use Sylius\Bundle\GridBundle\Builder\Filter\Filter;
@@ -58,6 +59,9 @@ final class AdminSupplierGrid extends AbstractGrid implements ResourceAwareGridI
         );
         $gridBuilder->addFilter(
             Filter::create('missingGenericFilterField', 'string'),
+        );
+        $gridBuilder->addField(
+            CallableField::createForService('missingCallableServiceField', 'app.some_service'),
         );
     }
 

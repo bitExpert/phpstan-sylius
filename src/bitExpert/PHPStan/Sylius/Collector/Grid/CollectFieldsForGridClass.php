@@ -27,6 +27,13 @@ use PHPStan\Type\Type;
  */
 final class CollectFieldsForGridClass extends AbstractGridClassCollector implements Collector
 {
+    /**
+     * Grid fields are built through a static factory. Every field class uses create(),
+     * and CallableField additionally offers createForService() for a service-backed
+     * callable. Both take the field name as their first argument.
+     */
+    private const FACTORY_METHODS = ['create', 'createForService'];
+
     public function __construct(private readonly FieldRegistry $fieldRegistry)
     {
     }
@@ -45,7 +52,7 @@ final class CollectFieldsForGridClass extends AbstractGridClassCollector impleme
             return null;
         }
 
-        if ((!$node->name instanceof Identifier) || ('create' !== $node->name->toString())) {
+        if (!$node->name instanceof Identifier || !\in_array($node->name->toString(), self::FACTORY_METHODS, true)) {
             return null;
         }
 
