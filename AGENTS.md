@@ -103,11 +103,11 @@ PHPStan extensions in this project follow a two-phase approach:
 
 This separation improves performance (collectors can run in parallel) and keeps rules focused on analysis rather than parsing.
 
-> **Caution**: `getNodeType()` is authoritative. `GridBuilderFieldIsPartOfResourceClass` and
-> `GridBuilderFilterIsPartOfResourceClass` both return `CollectedDataNode::class` and guard
-> `processNode()` with `if (!$node instanceof CollectedDataNode)`. Their `@implements Rule<StaticCall>`
-> docblocks are **wrong leftovers** — PHPStan cannot catch this because `processNode(Node $node, ...)`
-> takes the broad `Node` type. Trust `getNodeType()`, not the docblock.
+> **Note**: `getNodeType()` is authoritative and must agree with the `@implements` generic. Both grid
+> rules return `CollectedDataNode::class`. The `processNode()` parameter stays typed as `Node` because
+> that is what `Rule::processNode()` declares, and narrowing a parameter is a contravariance
+> violation. Do **not** add a defensive `instanceof` guard to compensate — see
+> [Known Issue 2](#2-a-redundant-instanceof-guard-can-hide-a-wrong-implements).
 
 ### Rule Execution Flow
 
@@ -524,12 +524,15 @@ second lane is not done.
 - **File**: `CollectRessourceClassForGridClass.php` (`Ressource` double `s`).
 - **Impact**: Must be preserved for BC; do not rename.
 
-### 2. Stale `@implements` docblocks on the two grid rules
-- Both `GridBuilder*IsPartOfResourceClass` rules declare `@implements Rule<StaticCall>` but actually
-  `return CollectedDataNode::class` from `getNodeType()`.
-- **Impact**: Misleads readers about the architecture; harmless at runtime. PHPStan cannot flag it because
-  `processNode(Node $node, ...)` takes the broad `Node` type.
-- **Action**: correct the docblocks (and the now-redundant `instanceof CollectedDataNode` guards).
+### 2. A redundant `instanceof` guard can hide a wrong `@implements`
+- `processNode()` must declare `Node $node` because `Rule::processNode()` does, so the generic in
+  `@implements` is the only thing that narrows `$node` inside the method body.
+- Both grid rules used to open with `if (!$node instanceof CollectedDataNode) { return []; }`. That
+  re-narrowing is exactly what **suppressed** their wrong `@implements Rule<StaticCall>` docblocks from
+  ever reaching PHPStan. Deleting the guard without fixing the docblock turns
+  `$node->get()` into `Call to an undefined method PhpParser\Node::get()`.
+- **Action**: when adding a rule, keep `@implements` and `getNodeType()` in agreement, and skip the
+  defensive `instanceof` guard — it can mask a real annotation mistake instead of catching one.
 
 ### 3. Node/collector coverage is opt-in
 - A field or filter class with **no** matching node is silently never validated — no error, no warning.
