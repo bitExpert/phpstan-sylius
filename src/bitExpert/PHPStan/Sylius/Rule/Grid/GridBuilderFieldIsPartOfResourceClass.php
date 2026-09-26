@@ -15,7 +15,6 @@ namespace bitExpert\PHPStan\Sylius\Rule\Grid;
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectFieldsForGridClass;
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectRessourceClassForGridClass;
 use PhpParser\Node;
-use PhpParser\Node\Expr\StaticCall;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\CollectedDataNode;
 use PHPStan\Reflection\ClassReflection;
@@ -26,7 +25,7 @@ use PHPStan\Rules\RuleErrorBuilder;
 use PHPStan\Type\Type;
 
 /**
- * @implements Rule<StaticCall>
+ * @implements Rule<CollectedDataNode>
  */
 readonly class GridBuilderFieldIsPartOfResourceClass implements Rule
 {
@@ -44,10 +43,6 @@ readonly class GridBuilderFieldIsPartOfResourceClass implements Rule
 
     public function processNode(Node $node, Scope $scope): array
     {
-        if (!$node instanceof CollectedDataNode) {
-            return [];
-        }
-
         $gridResourceMap = [];
         $gridFilesMap = [];
         $gridFieldsMap = [];
