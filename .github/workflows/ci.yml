@@ -42,7 +42,10 @@ jobs:
           composer update --no-interaction --no-progress
 
       - name: Show resolved dependency versions
-        run: composer show sylius/grid-bundle phpstan/phpstan phpunit/phpunit
+        run: |
+          composer show sylius/grid-bundle
+          composer show phpstan/phpstan
+          composer show phpunit/phpunit
 
       - name: Composer license check
         run: composer check-license
