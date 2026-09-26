@@ -341,7 +341,9 @@ name, and every node falls back to it.
 - **Registry order matters: keep the catch-all `Filter` node last.** First `supports()` match wins, so an
   earlier catch-all shadows any node registered after it — in particular a user's custom node. Only the
   catch-all is interface-based; the others match one concrete class name each, so the built-in set of
-  outcomes is order-independent.
+  outcomes is order-independent. This is enforced by
+  `GridBuilderFilterIsPartOfResourceClassUnitTest`, which drives both orders against `grid_custom_filter.php`
+  *and* parses `extension.neon` to assert the shipped order.
 - The catch-all is the *only* interface-based node, and only `Filter` itself implements `FilterInterface`.
   `StringFilter`, `BooleanFilter` etc. are plain `final class`es with a static `create()` returning the
   interface — they are matched by name, never by the catch-all. Anything without a dedicated node is
@@ -441,7 +443,9 @@ Prefer that over an interface check: interface-based nodes compete with the catc
 - **Test registries are hand-built.** Each grid rule test overrides `getCollectors()` and assembles its own
   node list. Registering a node in `extension.neon` alone changes nothing in the tests, so a green suite can
   pass while the new node is never exercised. Update both, and prove the node is load-bearing by pointing
-  one `FILTER_TYPE`/`FIELD_TYPE` at a wrong class name and confirming the expectation disappears.
+  one `FILTER_TYPE`/`FIELD_TYPE` at a wrong class name and confirming the expectation disappears. For the
+  same reason the filter test also parses `extension.neon` itself: a hand-built registry can only prove the
+  *mechanism*, never that the shipped config is ordered correctly.
 - **Do not bulk-shift fixture line numbers with sequential `str.replace`.** Replacing `46→49` and then
   `49→52` re-edits the value just written and shifts the wrong entries. Re-derive line numbers from the file.
 
@@ -456,7 +460,7 @@ Prefer that over an interface check: interface-based nodes compete with the catc
 | `ResourceAwareGridNeedsResourceClassValidUnitTest` | Validates correct configurations | `grid_valid.php`, `grid_valid_attr.php` |
 | `GridBuilderFieldIsPartOfResourceClassUnitTest` | Invalid field detection (incl. `createForService`) | `grid.php` |
 | `GridBuilderFieldIsPartOfResourceClassValidUnitTest` | Validates correct grids | `grid_valid.php` |
-| `GridBuilderFilterIsPartOfResourceClassUnitTest` | Invalid filter detection | `grid.php` |
+| `GridBuilderFilterIsPartOfResourceClassUnitTest` | Invalid filter detection, plus registry-order (catch-all vs. dedicated node) and `extension.neon` order | `grid.php`, `grid_custom_filter.php`, `CustomFilter.php` |
 | `GridBuilderFilterIsPartOfResourceClassValidUnitTest` | Validates correct grids | `grid_valid.php` |
 | `DefaultFilterRegistryUnitTest` | Registry functionality | None |
 
@@ -469,6 +473,8 @@ All fixtures (for analysis) reside under `tests/bitExpert/PHPStan/Sylius/Rule/*/
 - `grid.php`: `AdminSupplierGrid` with invalid field/filter definitions, plus `SomeOtherClass`. Shared by the field *and* filter tests, so any edit shifts expectations in both.
 - `grid_valid.php`, `grid_valid_attr.php`: correct grid configurations.
 - `grid_needs_resource_model.php` / `_attr.php` / `_no_methods.php` / `_native_interface.php`: resource-class detection cases.
+- `CustomFilter.php`: namespace `App\Filter`; a user-style filter that implements `FilterInterface`, so the catch-all matches it by interface. Implements every method for real so PHPStan verifies the signatures on both lanes.
+- `grid_custom_filter.php`: `CustomFilterGrid`, holding the one `CustomFilter::create()` call whose extracted field differs depending on which node wins.
 
 `Rule/Resource/data/` (namespace `App\Entity`):
 - `entity.php`: declares a class literally named `entity` (lowercase) implementing `ResourceInterface`.
@@ -476,7 +482,9 @@ All fixtures (for analysis) reside under `tests/bitExpert/PHPStan/Sylius/Rule/*/
 - `entity_non_constant_attribute.php`: non-constant attribute argument.
 
 These files are loaded via `composer.json` `autoload-dev.files` so classes exist during analysis, and
-`Rule/Grid/data/grid.php` + `entity.php` are excluded from PHPStan analysis in `phpstan.dist.neon`.
+`Rule/Grid/data/grid.php` + `entity.php` + `grid_custom_filter.php` are excluded from PHPStan analysis
+in `phpstan.dist.neon`. `CustomFilter.php` is deliberately **not** excluded: it declares no invalid
+references, so analysing it is what proves the interface implementation still holds on grid-bundle 1.16.
 
 ---
 
@@ -562,6 +570,22 @@ second lane is not done.
   in namespace `App\Entity`.
 - **Impact**: Avoid confusion; stick to PSR-1 naming in new fixtures. (The `Rule/Grid/data/entity.php`
   fixture is fine — it declares `Status`, `Country`, `Address`, `Supplier`.)
+
+### 6a. PHP-CS-Fixer rewrites a fixture class to the file's basename
+- `@Symfony` enables `psr_autoloading`, and its class-name matcher compares **case-insensitively**. A
+  snake_case data file that declares exactly one class whose name differs only by case gets silently
+  rewritten to the file's snake_case basename by `composer cs-fix`. Naming the file `custom_filter.php`
+  turned `class CustomFilter` into `class custom_filter`, which broke the fixture at runtime: the call
+  site `CustomFilter::create()` then named a non-existent class, `CollectFilterForGridClass` could no
+  longer resolve a `FilterInterface` return type, the call was silently skipped, and the test failed
+  only on the *missing* expected error.
+- Files whose class name shares no letters with the file name are left alone, which is why `grid.php`
+  (class `AdminSupplierGrid`) has never been touched.
+- **Action**: give any single-class fixture a file name matching its class in PSR-1 style
+  (`CustomFilter.php` → `class CustomFilter`). `grid_custom_filter.php` survives only because of the
+  no-letter-overlap accident above — do not rely on that if its class is ever renamed.
+- **Detection tip**: this failure mode is a *missing* error, not a wrong one, so a green-looking
+  `composer cs-fix` followed by a red test usually means the fixer edited a fixture, not the test.
 
 ---
 
