@@ -1,6 +1,5 @@
 parameters:
     level: max
-    reportUnmatchedIgnoredErrors: false
     treatPhpDocTypesAsCertain: false
     paths:
         - src
@@ -13,13 +12,3 @@ parameters:
         - tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity.php
     fileExtensions:
         - php
-    ignoreErrors:
-        -
-            message: '~Cannot cast mixed to string.~'
-            path: src/bitExpert/PHPStan/Sylius/Rule/Grid/AbstractGridBuilderRule.php
-        -
-            message: '~Cannot call~'
-            path: src/bitExpert/PHPStan/Sylius/Rule/Grid/GridBuilderFieldIsPartOfResourceClass.php
-        -
-            message: '~Cannot call~'
-            path: src/bitExpert/PHPStan/Sylius/Rule/Grid/GridBuilderFilterIsPartOfResourceClass.php
