@@ -36,6 +36,8 @@
       "tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid.php",
       "tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid_needs_resource_model.php",
       "tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid_needs_resource_model_attr.php",
+      "tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid_needs_resource_model_no_methods.php",
+      "tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid_needs_resource_model_native_interface.php",
       "tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity.php",
       "tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_index.php",
       "tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_non_constant_attribute.php"
