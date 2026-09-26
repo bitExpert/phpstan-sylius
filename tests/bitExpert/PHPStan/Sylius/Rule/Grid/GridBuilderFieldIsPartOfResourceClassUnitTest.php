@@ -57,7 +57,7 @@ class GridBuilderFieldIsPartOfResourceClassUnitTest extends RuleTestCase
             [
                 [
                     'The field "name" needs to exists as property in class "App\Entity\Supplier".',
-                    29,
+                    30,
                 ],
                 [
                     // This field is declared after the recursive "address.city" field.
@@ -66,7 +66,7 @@ class GridBuilderFieldIsPartOfResourceClassUnitTest extends RuleTestCase
                     // App\Entity\Address instead of App\Entity\Supplier and no error was
                     // ever reported for it.
                     'The field "plainFieldAfterDottedField" needs to exists as property in class "App\Entity\Supplier".',
-                    38,
+                    39,
                 ],
                 [
                     // Third segment of a recursive field. Once the walk leaves the
@@ -74,7 +74,7 @@ class GridBuilderFieldIsPartOfResourceClassUnitTest extends RuleTestCase
                     // answers with a TrinaryLogic whose cast to bool is always true,
                     // so every segment past the first silently passed.
                     'The field "missingThirdSegment" needs to exists as property in class "App\Entity\Supplier".',
-                    56,
+                    57,
                 ],
             ],
         );

@@ -70,14 +70,17 @@ services:
 		tags:
 			- phpstan.sylius.grid.filter
 	-
-		class: bitExpert\PHPStan\Sylius\Collector\Grid\Filter\Filter
-		tags:
-			- phpstan.sylius.grid.filter
-	-
 		class: bitExpert\PHPStan\Sylius\Collector\Grid\Filter\SelectFilter
 		tags:
 			- phpstan.sylius.grid.filter
 	-
 		class: bitExpert\PHPStan\Sylius\Collector\Grid\Filter\StringFilter
+		tags:
+			- phpstan.sylius.grid.filter
+
+	# Registered last on purpose: this node matches every filter that
+	# implements FilterInterface, so all concrete nodes have to be asked first.
+	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Filter\Filter
 		tags:
 			- phpstan.sylius.grid.filter

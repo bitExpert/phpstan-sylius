@@ -21,15 +21,26 @@ use PHPStan\Type\ObjectType;
 
 final readonly class Filter implements FilterNode
 {
-    private const FILTER_TYPE = 'Sylius\\Bundle\\GridBundle\\Builder\\Filter\\FilterInterface';
+    /**
+     * Both the old bundle interface and the one introduced in 1.16. The concrete
+     * grid-bundle filter factories return the new interface from 1.16 on, so
+     * checking only the old one would make this node silently stop matching.
+     */
+    private const FILTER_TYPES = [
+        'Sylius\\Bundle\\GridBundle\\Builder\\Filter\\FilterInterface',
+        'Sylius\\Component\\Grid\\Builder\\Filter\\FilterInterface',
+    ];
 
     public function supports(FullyQualified $nodeClass): bool
     {
         try {
-            $filterType = new ObjectType(self::FILTER_TYPE);
             $nodeClassType = new ObjectType($nodeClass->toString());
 
-            return $nodeClassType->isSuperTypeOf($filterType)->yes();
+            foreach (self::FILTER_TYPES as $filterType) {
+                if ((new ObjectType($filterType))->isSuperTypeOf($nodeClassType)->yes()) {
+                    return true;
+                }
+            }
         } catch (\Throwable $e) {
         }
 

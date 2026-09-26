@@ -8,6 +8,7 @@ use App\Entity\Status;
 use App\Entity\Supplier;
 use Sylius\Bundle\GridBundle\Builder\Field\StringField;
 use Sylius\Bundle\GridBundle\Builder\Filter\EnumFilter;
+use Sylius\Bundle\GridBundle\Builder\Filter\Filter;
 use Sylius\Bundle\GridBundle\Builder\Filter\StringFilter;
 use Sylius\Bundle\GridBundle\Builder\GridBuilderInterface;
 use Sylius\Bundle\GridBundle\Grid\AbstractGrid;
@@ -54,6 +55,9 @@ final class AdminSupplierGrid extends AbstractGrid implements ResourceAwareGridI
         );
         $gridBuilder->addField(
             StringField::create('address.country.missingThirdSegment')->setLabel('app.ui.missing'),
+        );
+        $gridBuilder->addFilter(
+            Filter::create('missingGenericFilterField', 'string'),
         );
     }
 

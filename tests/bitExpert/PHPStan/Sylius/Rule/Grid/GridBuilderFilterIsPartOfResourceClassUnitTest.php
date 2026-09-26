@@ -57,15 +57,22 @@ class GridBuilderFilterIsPartOfResourceClassUnitTest extends RuleTestCase
             [
                 [
                     'The filter field "name" needs to exists as property in resource class "App\Entity\Supplier".',
-                    44,
+                    45,
                 ],
                 [
                     'The filter field "status123" needs to exists as property in resource class "App\Entity\Supplier".',
-                    47,
+                    48,
                 ],
                 [
                     'The filter field "name" needs to exists as property in resource class "App\Entity\Supplier".',
-                    50,
+                    51,
+                ],
+                [
+                    // Handled by the generic Filter node, whose supports() used to
+                    // compare the subtypes the wrong way round and therefore never
+                    // matched anything.
+                    'The filter field "missingGenericFilterField" needs to exists as property in resource class "App\Entity\Supplier".',
+                    60,
                 ],
             ],
         );
