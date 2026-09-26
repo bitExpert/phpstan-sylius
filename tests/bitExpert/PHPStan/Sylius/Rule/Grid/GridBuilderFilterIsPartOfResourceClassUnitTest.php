@@ -40,9 +40,11 @@ class GridBuilderFilterIsPartOfResourceClassUnitTest extends RuleTestCase
         $filters[] = new EntityFilter();
         $filters[] = new EnumFilter();
         $filters[] = new ExistsFilter();
-        $filters[] = new Filter();
         $filters[] = new SelectFilter();
         $filters[] = new StringFilter();
+        // Mirrors extension.neon: the catch-all has to come last so it cannot
+        // shadow a node registered for a custom filter class.
+        $filters[] = new Filter();
 
         return [
             new CollectRessourceClassForGridClass(),
