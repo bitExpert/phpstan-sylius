@@ -66,6 +66,18 @@ services:
 		tags:
 			- phpstan.sylius.grid.filter
 	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Filter\BooleanFilter
+		tags:
+			- phpstan.sylius.grid.filter
+	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Filter\DateFilter
+		tags:
+			- phpstan.sylius.grid.filter
+	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Filter\MoneyFilter
+		tags:
+			- phpstan.sylius.grid.filter
+	-
 		class: bitExpert\PHPStan\Sylius\Collector\Grid\Filter\ExistsFilter
 		tags:
 			- phpstan.sylius.grid.filter

@@ -8,8 +8,11 @@ use App\Entity\Status;
 use App\Entity\Supplier;
 use Sylius\Bundle\GridBundle\Builder\Field\CallableField;
 use Sylius\Bundle\GridBundle\Builder\Field\StringField;
+use Sylius\Bundle\GridBundle\Builder\Filter\BooleanFilter;
+use Sylius\Bundle\GridBundle\Builder\Filter\DateFilter;
 use Sylius\Bundle\GridBundle\Builder\Filter\EnumFilter;
 use Sylius\Bundle\GridBundle\Builder\Filter\Filter;
+use Sylius\Bundle\GridBundle\Builder\Filter\MoneyFilter;
 use Sylius\Bundle\GridBundle\Builder\Filter\StringFilter;
 use Sylius\Bundle\GridBundle\Builder\GridBuilderInterface;
 use Sylius\Bundle\GridBundle\Grid\AbstractGrid;
@@ -62,6 +65,15 @@ final class AdminSupplierGrid extends AbstractGrid implements ResourceAwareGridI
         );
         $gridBuilder->addField(
             CallableField::createForService('missingCallableServiceField', 'app.some_service'),
+        );
+        $gridBuilder->addFilter(
+            BooleanFilter::create('missingBooleanFilterField'),
+        );
+        $gridBuilder->addFilter(
+            DateFilter::create('missing_date_filter_field'),
+        );
+        $gridBuilder->addFilter(
+            MoneyFilter::create('missingMoneyFilterField', 'USD'),
         );
     }
 
