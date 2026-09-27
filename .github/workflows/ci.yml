@@ -7,13 +7,13 @@ on:
 
 jobs:
   run:
-    name: php ${{ matrix.php-versions }} / grid-bundle ${{ matrix.grid-bundle }}
+    name: php ${{ matrix.php-versions }} / phpunit ${{ matrix.phpunit }} / grid-bundle ${{ matrix.grid-bundle }}
     runs-on: ${{ matrix.operating-system }}
     strategy:
       fail-fast: false
       matrix:
         operating-system: ['ubuntu-latest']
-        php-versions: ['8.2']
+        php-versions: ['8.4', '8.5']
         # The extension supports grid-bundle >= 1.15. Sylius 1.16 moved the
         # builder interfaces into Sylius\Component\Grid and deprecated the
         # Sylius\Bundle\GridBundle equivalents, so both sides of that boundary
@@ -23,10 +23,9 @@ jobs:
         grid-bundle:
           - '^1.15 <1.16'
           - '^1.16'
-        coveralls: [ false ]
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Configure PHP
         uses: shivammathur/setup-php@v2
