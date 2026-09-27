@@ -20,7 +20,7 @@
     "nikic/php-parser": "^5.4",
     "phpunit/phpunit": "^12.5",
     "friendsofphp/php-cs-fixer": "^3.69",
-    "madewithlove/license-checker": "^1.6"
+    "madewithlove/license-checker": "^3.1"
   },
   "autoload": {
     "psr-4": {
