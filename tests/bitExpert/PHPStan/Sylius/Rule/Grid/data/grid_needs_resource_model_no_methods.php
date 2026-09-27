@@ -15,6 +15,6 @@ use Sylius\Component\Grid\Attribute\AsGrid;
  * that broke.
  */
 #[AsGrid(resourceClass: 'App\Entity\SupplierNotFound')]
-final class grid_needs_resource_model_no_methods
+final class GridNeedsResourceModelNoMethods
 {
 }

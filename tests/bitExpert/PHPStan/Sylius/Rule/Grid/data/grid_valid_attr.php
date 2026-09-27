@@ -10,7 +10,7 @@ use Sylius\Bundle\GridBundle\Grid\AbstractGrid;
 use Sylius\Component\Grid\Attribute\AsGrid;
 
 #[AsGrid(resourceClass: Supplier::class)]
-final class grid_valid_attr extends AbstractGrid
+final class GridValidAttr extends AbstractGrid
 {
     public function buildGrid(GridBuilderInterface $gridBuilder): void
     {

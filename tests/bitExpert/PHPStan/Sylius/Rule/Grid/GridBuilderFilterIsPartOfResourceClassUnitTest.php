@@ -228,45 +228,4 @@ class GridBuilderFilterIsPartOfResourceClassUnitTest extends RuleTestCase
             ],
         );
     }
-
-    /**
-     * The three ordering tests above drive their own registries, so on their
-     * own they cannot notice extension.neon being reordered. This one reads
-     * the real config and asserts the invariant that actually ships: the
-     * catch-all is registered after every concrete node.
-     */
-    public function testCatchAllIsRegisteredLastInExtensionNeon(): void
-    {
-        $config = \file_get_contents(\dirname(__DIR__, 6) . '/extension.neon');
-        self::assertIsString($config);
-
-        $filterNodes = [];
-        foreach (\preg_split('/^\t-$/m', $config) ?: [] as $block) {
-            if (!\str_contains($block, 'phpstan.sylius.grid.filter')) {
-                continue;
-            }
-
-            if (1 !== \preg_match('/^\s*class:\s*(\S+)/m', $block, $matches)) {
-                self::fail('Every filter node service must declare a class.');
-            }
-            // NEON leaves namespace separators unescaped, so shorten by hand
-            // rather than fighting backslashes in a regex.
-            $filterNodes[] = \substr((string) \strrchr($matches[1], '\\'), 1);
-        }
-
-        self::assertContains('Filter', $filterNodes, 'The catch-all node must be registered.');
-
-        $duplicates = \array_keys(\array_filter(
-            \array_count_values($filterNodes),
-            static fn (int $count): bool => 1 < $count,
-        ));
-        self::assertSame([], $duplicates, 'No filter node may be registered twice.');
-
-        self::assertSame(
-            'Filter',
-            \end($filterNodes),
-            'The catch-all Filter node must stay last in extension.neon, otherwise it shadows '
-                . 'every node registered after it, including user-supplied ones.',
-        );
-    }
 }

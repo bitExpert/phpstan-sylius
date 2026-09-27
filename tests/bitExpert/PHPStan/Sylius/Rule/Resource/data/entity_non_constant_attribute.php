@@ -15,7 +15,7 @@ use Sylius\Resource\Model\ResourceInterface;
  * analysis. All of these must now be skipped silently instead.
  */
 #[AsResource(formType: new \stdClass())]
-class entityWithNonConstantFormType implements ResourceInterface
+class EntityWithNonConstantFormType implements ResourceInterface
 {
     private int $id;
 
@@ -26,7 +26,7 @@ class entityWithNonConstantFormType implements ResourceInterface
 }
 
 #[AsResource(formType: [self::class])]
-class entityWithArrayFormType implements ResourceInterface
+class EntityWithArrayFormType implements ResourceInterface
 {
     private int $id;
 
@@ -37,7 +37,7 @@ class entityWithArrayFormType implements ResourceInterface
 }
 
 #[AsResource(formType: 123)]
-class entityWithIntFormType implements ResourceInterface
+class EntityWithIntFormType implements ResourceInterface
 {
     private int $id;
 
@@ -48,7 +48,7 @@ class entityWithIntFormType implements ResourceInterface
 }
 
 #[Index(grid: new \stdClass())]
-class entityWithNonConstantGrid implements ResourceInterface
+class EntityWithNonConstantGrid implements ResourceInterface
 {
     private int $id;
 
@@ -59,7 +59,7 @@ class entityWithNonConstantGrid implements ResourceInterface
 }
 
 #[Index(grid: [self::class])]
-class entityWithArrayGrid implements ResourceInterface
+class EntityWithArrayGrid implements ResourceInterface
 {
     private int $id;
 
@@ -73,7 +73,7 @@ class entityWithArrayGrid implements ResourceInterface
  * A single constant string is still resolved, so a missing class is reported.
  */
 #[AsResource(formType: 'FormClassNotExists')]
-class entityWithConstantFormType implements ResourceInterface
+class EntityWithConstantFormType implements ResourceInterface
 {
     private int $id;
 

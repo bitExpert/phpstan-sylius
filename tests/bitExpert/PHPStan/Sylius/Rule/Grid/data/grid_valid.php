@@ -13,7 +13,7 @@ use Sylius\Bundle\GridBundle\Builder\GridBuilderInterface;
 use Sylius\Bundle\GridBundle\Grid\AbstractGrid;
 use Sylius\Bundle\GridBundle\Grid\ResourceAwareGridInterface;
 
-final class grid_valid extends AbstractGrid implements ResourceAwareGridInterface
+final class GridValid extends AbstractGrid implements ResourceAwareGridInterface
 {
     public static function getName(): string
     {

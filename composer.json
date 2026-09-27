@@ -34,8 +34,8 @@
     "files": [
       "tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/entity.php",
       "tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid.php",
-    "tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/CustomFilter.php",
-    "tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid_custom_filter.php",
+      "tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/custom_filter.php",
+      "tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid_custom_filter.php",
       "tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid_needs_resource_model.php",
       "tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid_needs_resource_model_attr.php",
       "tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid_needs_resource_model_no_methods.php",

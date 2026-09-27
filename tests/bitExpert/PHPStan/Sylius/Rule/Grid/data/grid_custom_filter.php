@@ -21,7 +21,7 @@ use Sylius\Bundle\GridBundle\Grid\ResourceAwareGridInterface;
  * The first argument is what the catch-all extracts; the dedicated node
  * returns a different field on purpose.
  */
-final class grid_custom_filter extends AbstractGrid implements ResourceAwareGridInterface
+final class GridCustomFilter extends AbstractGrid implements ResourceAwareGridInterface
 {
     public static function getName(): string
     {
