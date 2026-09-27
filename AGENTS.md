@@ -428,11 +428,17 @@ Prefer that over an interface check: interface-based nodes compete with the catc
 
 ### Test Infrastructure
 
-- **Framework**: PHPUnit 11.
+- **Framework**: PHPUnit 11.5 and 12.5. The dev constraint is the union `^11.5 || ^12.5` because PHPUnit caps
+  the pairing: 11.5 is the last series that installs on PHP 8.2, 12.x needs `>= 8.3`, 13.x needs `>= 8.4.1`.
+  Since the package itself must keep supporting PHP 8.2 (Sylius consumers), CI runs a PHP 8.2 lane on 11.5
+  *and* a PHP 8.4 lane on 12.5. Every lane pins its own PHPUnit constraint before `composer update`; the
+  committed `composer.lock` therefore never decides the matrix and is effectively advisory.
 - **Configuration**: `phpunit.xml.dist` (suffix `UnitTest.php`, bootstrap `tests/bootstrap.php`).
 - **Rules** use `PHPStan\Testing\RuleTestCase`.
 - **Utility/Registry** use standard `PHPUnit\Framework\TestCase`.
-- 17 tests total across both lanes.
+- 20 tests total. The count is 20 on every lane, but assertions differ by grid-bundle lane: 21 on `^1.15
+  <1.16` (1 skipped — the `Sylius\Component\Grid\GridInterface` case needs `>= 1.16`) and 22 on `^1.16`
+  (nothing skipped). A 21/22 split is expected; a 20-vs-something split is not.
 
 #### Gotchas that make tests lie
 
@@ -440,6 +446,24 @@ Prefer that over an interface check: interface-based nodes compete with the catc
   caught by these tests. Do not add a test that appears to cover file attribution.
 - **`phpunit.xml.dist` sets `stopOnFailure="true"`.** A failing run reports only the tests up to the first
   failure, so a low test count is not a discovery problem — confirm with `--list-tests`.
+- **PHPUnit 12 escalates a config-schema mismatch from a deprecation to a failure.** PHPUnit validates the
+  config against the schema for the *current series*, not against the URL in
+  `xsi:noNamespaceSchemaLocation` — so a stale URL there is harmless on its own. But when the config *does*
+  fail series validation, 11.5 emits a plain `testRunnerTriggeredDeprecation` (never fails the run) while 12.5
+  emits `testRunnerTriggeredPhpunitDeprecation`, which trips this project's `failOnPhpunitDeprecation="true"`.
+  If a 12.5 lane starts failing on config validation, fix the config (or run `--migrate-configuration`) rather
+  than relaxing `failOnPhpunitDeprecation`.
+- **PHPStan's PHPUnit bridge only supports PHPUnit 11 in practice.** `PHPStan\Testing\PHPUnit\PHPStanPHPUnitExtension`
+  and its subscribers implement `PHPUnit\Event\Test\PreparationStarted(Subscriber)` and
+  `PHPUnit\Event\Test\DataProviderMethodCalled(Subscriber)`, all of which moved to
+  `PHPUnit\Event\Events\Test\*` in PHPUnit 12. The `RuleTestCase` hot path is unaffected (it only touches
+  `PHPUnit\Framework\TestCase` and `ExpectationFailedException`), which is why the 12.5 lane passes. But
+  **do not** add
+  ```xml
+  <extensions><bootstrap class="PHPStan\Testing\PHPUnit\PHPStanPHPUnitExtension"/></extensions>
+  ```
+  to `phpunit.xml.dist` — on PHPUnit 12.5 that is a fatal error. If a test ever needs PHPStan's container
+  initialised before a data provider runs, it must be gated on the PHPUnit major version.
 - **Test registries are hand-built.** Each grid rule test overrides `getCollectors()` and assembles its own
   node list. Registering a node in `extension.neon` alone changes nothing in the tests, so a green suite can
   pass while the new node is never exercised. Update both, and prove the node is load-bearing by pointing
@@ -501,11 +525,13 @@ From `composer.json`:
 
 ### CI Pipeline (`.github/workflows/ci.yml`)
 
-Matrix over PHP version × OS × grid-bundle constraint. Each lane runs:
+Matrix over PHP version × OS × grid-bundle constraint, with the PHPUnit constraint coupled to the PHP
+version via a matrix `include:` block (4 lanes). Each lane runs:
 
 1. Checkout repo
 2. Configure PHP (`shivammathur/setup-php`)
-3. `composer require --dev "sylius/grid-bundle:<constraint>" --no-update` + `composer update`
+3. `composer require --dev "sylius/grid-bundle:<constraint>" "phpunit/phpunit:<constraint>" --no-update` +
+   `composer update`
 4. Show resolved versions — **one `composer show <pkg>` call per package**; `composer show` takes a single
    package plus an optional version, so passing several names exits `1`
 5. `composer check-license`
@@ -513,8 +539,16 @@ Matrix over PHP version × OS × grid-bundle constraint. Each lane runs:
 7. `composer static-analysis`
 8. `composer test`
 
-The two grid-bundle lanes are `^1.15 <1.16` and `^1.16`. Keep both green; a change that only passes the
-second lane is not done.
+The two grid-bundle lanes are `^1.15 <1.16` and `^1.16`, and they cross with two PHP/PHPUnit lanes:
+PHP 8.2 on PHPUnit `^11.5`, and PHP 8.4 on PHPUnit `^12.5`. Keep all four green; a change that only passes
+one of them is not done. 8.3 is deliberately not used: it is past EOL, and 8.4 is the first non-EOL version
+that can host PHPUnit 12.
+
+**Local verification gotcha:** `vendor/bin/*` scripts resolve `php` from `PATH` via their shebang, *not* from
+whichever PHP you invoked Composer with. `php8.4 composer test` still runs PHPUnit under 8.2 unless 8.4 is
+first on `PATH`, which shows up as a confusing parse error in a dependency (e.g. `sebastian/diff` using typed
+class constants, a PHP 8.3 feature). Symlink the target PHP into a throwaway bin dir and prepend it to
+`PATH` before running the `composer` scripts.
 
 ### Coding Standards
 
