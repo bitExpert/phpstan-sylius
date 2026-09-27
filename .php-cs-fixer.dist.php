@@ -4,7 +4,16 @@ declare(strict_types=1);
 
 $finder = (new PhpCsFixer\Finder())
     ->in(__DIR__)
-    ->exclude(['vendor']);
+    ->exclude([
+        'vendor',
+        // Analysis fixtures are loaded through composer autoload-dev.files, not
+        // by class name, so the psr_autoloading rule that @Symfony enables does
+        // not apply to them: their file name is snake_case while their classes
+        // are PSR-1. Without this the fixer would rewrite every fixture class to
+        // its file's basename, which breaks the references between fixtures.
+        'tests/bitExpert/PHPStan/Sylius/Rule/Grid/data',
+        'tests/bitExpert/PHPStan/Sylius/Rule/Resource/data',
+    ]);
 
 return (new PhpCsFixer\Config())
     ->setRiskyAllowed(true)

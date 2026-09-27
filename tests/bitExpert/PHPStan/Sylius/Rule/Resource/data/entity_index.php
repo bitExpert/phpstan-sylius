@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use Sylius\Resource\Metadata\AsResource;
+use Sylius\Resource\Metadata\Index;
 use Sylius\Resource\Model\ResourceInterface;
 
-#[AsResource(
-    formType: 'FormClassNotExists',
-)]
-class Entity implements ResourceInterface
+#[Index(grid: 'App\Grid\GridClassNotExists')]
+class EntityIndex implements ResourceInterface
 {
     private int $id;
 

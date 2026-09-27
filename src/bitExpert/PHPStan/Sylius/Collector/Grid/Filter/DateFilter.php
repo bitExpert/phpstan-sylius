@@ -17,34 +17,14 @@ use PhpParser\Node\Arg;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Scalar\String_;
-use PHPStan\Type\ObjectType;
 
-final readonly class Filter implements FilterNode
+final readonly class DateFilter implements FilterNode
 {
-    /**
-     * Both the old bundle interface and the one introduced in 1.16. The concrete
-     * grid-bundle filter factories return the new interface from 1.16 on, so
-     * checking only the old one would make this node silently stop matching.
-     */
-    private const FILTER_TYPES = [
-        'Sylius\\Bundle\\GridBundle\\Builder\\Filter\\FilterInterface',
-        'Sylius\\Component\\Grid\\Builder\\Filter\\FilterInterface',
-    ];
+    private const FILTER_TYPE = 'Sylius\\Bundle\\GridBundle\\Builder\\Filter\\DateFilter';
 
     public function supports(FullyQualified $nodeClass): bool
     {
-        try {
-            $nodeClassType = new ObjectType($nodeClass->toString());
-
-            foreach (self::FILTER_TYPES as $filterType) {
-                if ((new ObjectType($filterType))->isSuperTypeOf($nodeClassType)->yes()) {
-                    return true;
-                }
-            }
-        } catch (\Throwable $e) {
-        }
-
-        return false;
+        return self::FILTER_TYPE === $nodeClass->name;
     }
 
     public function getFilterFields(StaticCall $node): array

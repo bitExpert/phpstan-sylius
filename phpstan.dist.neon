@@ -1,6 +1,5 @@
 parameters:
     level: max
-    reportUnmatchedIgnoredErrors: false
     treatPhpDocTypesAsCertain: false
     paths:
         - src
@@ -8,18 +7,15 @@ parameters:
     excludePaths:
         - tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/entity.php
         - tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid.php
+        - tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid_custom_filter.php
         - tests/bitExpert/PHPStan/Sylius/Rule/Grid//data/grid_needs_resource_model.php
         - tests/bitExpert/PHPStan/Sylius/Rule/Grid//data/grid_needs_resource_model_attr.php
+        - tests/bitExpert/PHPStan/Sylius/Rule/Grid//data/grid_needs_resource_model_no_methods.php
+        # Only parses on grid-bundle >= 1.16, so it must not be statically analysed
+        # against the >= 1.15 lane.
+        - tests/bitExpert/PHPStan/Sylius/Rule/Grid//data/grid_needs_resource_model_native_interface.php
         - tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity.php
+        - tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_index.php
+        - tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_non_constant_attribute.php
     fileExtensions:
         - php
-    ignoreErrors:
-        -
-            message: '~Cannot cast mixed to string.~'
-            path: src/bitExpert/PHPStan/Sylius/Rule/Grid/AbstractGridBuilderRule.php
-        -
-            message: '~Cannot call~'
-            path: src/bitExpert/PHPStan/Sylius/Rule/Grid/GridBuilderFieldIsPartOfResourceClass.php
-        -
-            message: '~Cannot call~'
-            path: src/bitExpert/PHPStan/Sylius/Rule/Grid/GridBuilderFilterIsPartOfResourceClass.php

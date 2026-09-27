@@ -18,7 +18,7 @@ use PHPStan\Node\InClassNode;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
-use PHPStan\Type\Constant\ConstantStringType;
+use PHPStan\Type\Type;
 
 /**
  * @implements Rule<InClassNode>
@@ -29,6 +29,9 @@ class IndexOperationNeedsGridClassRule implements Rule
     {
     }
 
+    /**
+     * @return class-string<InClassNode>
+     */
     public function getNodeType(): string
     {
         return InClassNode::class;
@@ -48,26 +51,43 @@ class IndexOperationNeedsGridClassRule implements Rule
         $resourceClassAttributes = $classReflection->getAttributes();
         foreach ($resourceClassAttributes as $attribute) {
             if ('Sylius\Resource\Metadata\Index' === $attribute->getName()) {
-                /** @var array<string, ConstantStringType> $argumentTypes */
                 $argumentTypes = $attribute->getArgumentTypes();
-                if (isset($argumentTypes['grid'])) {
-                    $gridClass = $argumentTypes['grid']->getValue();
+                $gridClass = self::resolveConstantString($argumentTypes['grid'] ?? null);
+                if (null === $gridClass) {
+                    continue;
+                }
 
-                    try {
-                        $this->broker->getClass($gridClass);
-                    } catch (\Throwable $e) {
-                        $message = \sprintf('Grid class "%s" not found!', $gridClass);
+                try {
+                    $this->broker->getClass($gridClass);
+                } catch (\Throwable) {
+                    $message = \sprintf('Grid class "%s" not found!', $gridClass);
 
-                        return [
-                            RuleErrorBuilder::message($message)
-                                ->identifier('sylius.resource.gridClassNotFound')
-                                ->build(),
-                        ];
-                    }
+                    return [
+                        RuleErrorBuilder::message($message)
+                            ->identifier('sylius.resource.gridClassNotFound')
+                            ->build(),
+                    ];
                 }
             }
         }
 
         return [];
+    }
+
+    /**
+     * Attribute arguments are not guaranteed to be a single constant string, for
+     * example #[Index(grid: new SomeType())] yields an ObjectType. Calling
+     * Type::getValue() on such an argument raises an internal error and aborts the
+     * whole analysis, so only single constant strings are accepted.
+     */
+    private static function resolveConstantString(?Type $argumentType): ?string
+    {
+        if (null === $argumentType) {
+            return null;
+        }
+
+        $constantStrings = $argumentType->getConstantStrings();
+
+        return 1 === \count($constantStrings) ? $constantStrings[0]->getValue() : null;
     }
 }

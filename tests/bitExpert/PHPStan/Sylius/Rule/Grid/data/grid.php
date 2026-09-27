@@ -6,8 +6,13 @@ namespace App\Grid;
 
 use App\Entity\Status;
 use App\Entity\Supplier;
+use Sylius\Bundle\GridBundle\Builder\Field\CallableField;
 use Sylius\Bundle\GridBundle\Builder\Field\StringField;
+use Sylius\Bundle\GridBundle\Builder\Filter\BooleanFilter;
+use Sylius\Bundle\GridBundle\Builder\Filter\DateFilter;
 use Sylius\Bundle\GridBundle\Builder\Filter\EnumFilter;
+use Sylius\Bundle\GridBundle\Builder\Filter\Filter;
+use Sylius\Bundle\GridBundle\Builder\Filter\MoneyFilter;
 use Sylius\Bundle\GridBundle\Builder\Filter\StringFilter;
 use Sylius\Bundle\GridBundle\Builder\GridBuilderInterface;
 use Sylius\Bundle\GridBundle\Grid\AbstractGrid;
@@ -35,6 +40,9 @@ final class AdminSupplierGrid extends AbstractGrid implements ResourceAwareGridI
             StringField::create('address.city')->setLabel('app.ui.address.city'),
         );
         $gridBuilder->addField(
+            StringField::create('plainFieldAfterDottedField')->setLabel('app.ui.plain'),
+        );
+        $gridBuilder->addField(
             StringField::create('.')->setLabel('app.ui.some_calculated_field'),
         );
         $gridBuilder->addFilter(
@@ -45,6 +53,27 @@ final class AdminSupplierGrid extends AbstractGrid implements ResourceAwareGridI
         );
         $gridBuilder->addFilter(
             StringFilter::create('virtual-field', ['name', 'address.city']),
+        );
+        $gridBuilder->addField(
+            StringField::create('address.country.isoCode')->setLabel('app.ui.isoCode'),
+        );
+        $gridBuilder->addField(
+            StringField::create('address.country.missingThirdSegment')->setLabel('app.ui.missing'),
+        );
+        $gridBuilder->addFilter(
+            Filter::create('missingGenericFilterField', 'string'),
+        );
+        $gridBuilder->addField(
+            CallableField::createForService('missingCallableServiceField', 'app.some_service'),
+        );
+        $gridBuilder->addFilter(
+            BooleanFilter::create('missingBooleanFilterField'),
+        );
+        $gridBuilder->addFilter(
+            DateFilter::create('missing_date_filter_field'),
+        );
+        $gridBuilder->addFilter(
+            MoneyFilter::create('missingMoneyFilterField', 'USD'),
         );
     }
 
