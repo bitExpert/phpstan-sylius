@@ -10,9 +10,8 @@
  */
 declare(strict_types=1);
 
-namespace bitExpert\PHPStan\Sylius\Rule\Grid;
+namespace bitExpert\PHPStan\Sylius\Rule\Grid\GridBuilder;
 
-use bitExpert\PHPStan\Sylius\Collector\Grid\CollectFilterForGridClass;
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectRessourceClassForGridClass;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\BooleanFilter;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\DateFilter;
@@ -25,6 +24,7 @@ use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\FilterNode;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\MoneyFilter;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\SelectFilter;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\StringFilter;
+use bitExpert\PHPStan\Sylius\Collector\Grid\GridBuilder\CollectFilter;
 use PhpParser\Node;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Name\FullyQualified;
@@ -33,13 +33,13 @@ use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 
 /**
- * @extends RuleTestCase<GridBuilderFilterIsPartOfResourceClass>
+ * @extends RuleTestCase<FilterIsPartOfResourceClass>
  */
-class GridBuilderFilterIsPartOfResourceClassUnitTest extends RuleTestCase
+class FilterIsPartOfResourceClassUnitTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {
-        return new GridBuilderFilterIsPartOfResourceClass($this->createReflectionProvider());
+        return new FilterIsPartOfResourceClass($this->createReflectionProvider());
     }
 
     /**
@@ -80,7 +80,7 @@ class GridBuilderFilterIsPartOfResourceClassUnitTest extends RuleTestCase
     {
         return [
             new CollectRessourceClassForGridClass(),
-            new CollectFilterForGridClass(new DefaultFilterRegistry($filters)),
+            new CollectFilter(new DefaultFilterRegistry($filters)),
         ];
     }
 
@@ -107,7 +107,7 @@ class GridBuilderFilterIsPartOfResourceClassUnitTest extends RuleTestCase
     public function testRule(): void
     {
         $this->analyse(
-            [__DIR__ . '/data/grid.php'],
+            [__DIR__ . '/../data/grid.php'],
             [
                 [
                     'The filter field "name" needs to exists as property in resource class "App\Entity\Supplier".',
@@ -155,7 +155,7 @@ class GridBuilderFilterIsPartOfResourceClassUnitTest extends RuleTestCase
     public function testCatchAllResolvesAUserFilterByInterface(): void
     {
         $this->analyse(
-            [__DIR__ . '/data/grid_custom_filter.php'],
+            [__DIR__ . '/../data/grid_custom_filter.php'],
             [
                 [
                     'The filter field "catchAllOnlyField" needs to exists as property in resource class "App\Entity\Supplier".',
@@ -182,7 +182,7 @@ class GridBuilderFilterIsPartOfResourceClassUnitTest extends RuleTestCase
         ];
 
         $this->analyse(
-            [__DIR__ . '/data/grid_custom_filter.php'],
+            [__DIR__ . '/../data/grid_custom_filter.php'],
             [
                 [
                     'The filter field "catchAllOnlyField" needs to exists as property in resource class "App\Entity\Supplier".',
@@ -213,7 +213,7 @@ class GridBuilderFilterIsPartOfResourceClassUnitTest extends RuleTestCase
         ];
 
         $this->analyse(
-            [__DIR__ . '/data/grid_custom_filter.php'],
+            [__DIR__ . '/../data/grid_custom_filter.php'],
             [
                 [
                     'The filter field "catchAllOnlyField" needs to exists as property in resource class "App\Entity\Supplier".',

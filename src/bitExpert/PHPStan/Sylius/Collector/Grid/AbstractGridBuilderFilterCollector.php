@@ -13,56 +13,50 @@ declare(strict_types=1);
 namespace bitExpert\PHPStan\Sylius\Collector\Grid;
 
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\FilterRegistry;
-use PhpParser\Node;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name\FullyQualified;
 use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
-use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
 
 /**
+ * Collects the filter factory calls of a grid builder, no matter whether the
+ * builder is used inside a grid class or inside a grid mutator.
+ *
  * @implements Collector<StaticCall, array{string, non-empty-array<string>, -1|int<1, max>}>
  */
-final class CollectFilterForGridClass extends AbstractGridClassCollector implements Collector
+abstract class AbstractGridBuilderFilterCollector extends AbstractGridBuilderCallCollector implements Collector
 {
+    private const FACTORY_METHODS = ['create'];
+
     public function __construct(private readonly FilterRegistry $filterRegistry)
     {
     }
 
     /**
-     * @return class-string
+     * Whether the current scope belongs to a grid or to a grid mutator.
      */
-    public function getNodeType(): string
+    abstract protected function scopeIsBuilderScope(Scope $scope): bool;
+
+    protected function isBuilderCall(StaticCall $node, Scope $scope): bool
     {
-        return StaticCall::class;
+        if ((!$node->name instanceof Identifier) || !\in_array($node->name->toString(), self::FACTORY_METHODS, true)) {
+            return false;
+        }
+
+        if (!$this->scopeIsBuilderScope($scope)) {
+            return false;
+        }
+
+        return $this->isFilterInterfaceReturnType($scope->getType($node));
     }
 
-    public function processNode(Node $node, Scope $scope): ?array
+    /**
+     * @return array{string, non-empty-array<string>, -1|int<1, max>}|null
+     */
+    protected function collect(StaticCall $node, string $className): ?array
     {
-        if (!$node instanceof StaticCall) {
-            return null;
-        }
-
-        if ((!$node->name instanceof Identifier) || ('create' !== $node->name->toString())) {
-            return null;
-        }
-
-        if (!$this->scopeIsGrid($scope)) {
-            return null;
-        }
-
-        if (!$this->isFilterInterfaceReturnType($scope->getType($node))) {
-            return null;
-        }
-
-        $classReflection = $scope->getClassReflection();
-        if (null === $classReflection) {
-            return null;
-        }
-
-        $classType = new ObjectType($classReflection->getName());
         // first check if the various filter implementations have defined custom fields to filter on
         $filterFields = [];
         /** @var FullyQualified $nodeClass */
@@ -79,7 +73,7 @@ final class CollectFilterForGridClass extends AbstractGridClassCollector impleme
             return null;
         }
 
-        return [$classType->getClassName(), $filterFields, $node->getLine()];
+        return [$className, $filterFields, $node->getLine()];
     }
 
     protected function isFilterInterfaceReturnType(Type $type): bool

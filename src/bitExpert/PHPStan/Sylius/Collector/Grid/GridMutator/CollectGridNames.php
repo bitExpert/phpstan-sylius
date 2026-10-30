@@ -1,0 +1,84 @@
+<?php
+
+/*
+ * This file is part of the phpstan-sylius package.
+ *
+ * (c) bitExpert AG
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+declare(strict_types=1);
+
+namespace bitExpert\PHPStan\Sylius\Collector\Grid\GridMutator;
+
+use bitExpert\PHPStan\Sylius\Collector\Grid\AbstractGridClassCollector;
+use PhpParser\Node;
+use PHPStan\Analyser\Scope;
+use PHPStan\Collectors\Collector;
+use PHPStan\Node\InClassNode;
+
+/**
+ * Collects the grid names a grid mutator is attached to via its
+ * #[AsGridMutator(grid: '...')] attributes. The names are the join key to the
+ * grid classes (and through them to the resource classes) the mutator
+ * mutates.
+ *
+ * AsGridMutator is repeatable: one mutator class can mutate several grids, in
+ * which case every grid name is collected, mirroring the GridMutatorPass which
+ * registers the mutator once per attribute.
+ *
+ * @implements Collector<InClassNode, array{string, non-empty-list<string>, int}>
+ */
+final class CollectGridNames extends AbstractGridClassCollector implements Collector
+{
+    private const AS_GRID_MUTATOR_ATTRIBUTE = 'Sylius\Component\Grid\Attribute\AsGridMutator';
+
+    /**
+     * @return class-string<InClassNode>
+     */
+    public function getNodeType(): string
+    {
+        return InClassNode::class;
+    }
+
+    /**
+     * @return array{string, non-empty-list<string>, int}|null
+     */
+    public function processNode(Node $node, Scope $scope): ?array
+    {
+        if (!$node instanceof InClassNode) {
+            return null;
+        }
+
+        $classReflection = $node->getClassReflection();
+
+        $gridNames = [];
+        $line = $node->getLine();
+        foreach ($classReflection->getAttributes() as $attribute) {
+            if (self::AS_GRID_MUTATOR_ATTRIBUTE !== $attribute->getName()) {
+                continue;
+            }
+
+            $argumentTypes = $attribute->getArgumentTypes();
+            $gridArgument = $argumentTypes['grid'] ?? ($argumentTypes[0] ?? null);
+            if (null === $gridArgument) {
+                continue;
+            }
+
+            $constantStrings = $gridArgument->getConstantStrings();
+            if (1 !== \count($constantStrings)) {
+                continue;
+            }
+
+            $gridNames[] = $constantStrings[0]->getValue();
+            $line = $node->getOriginalNode()->getStartLine();
+        }
+
+        if (0 === \count($gridNames)) {
+            return null;
+        }
+
+        return [$classReflection->getName(), $gridNames, $line];
+    }
+}

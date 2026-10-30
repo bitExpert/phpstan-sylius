@@ -9,7 +9,7 @@ This file provides structured context for AI agents (e.g., copilot, Claude, etc.
 - **Package**: `bitexpert/phpstan-sylius`
 - **Type**: PHPStan extension (type: `phpstan-extension` in `composer.json`)
 - **Purpose**: Additional static analysis rules for Sylius projects, validating grid configurations and resource metadata.
-- **Requirements**: PHP ^8.2, PHPStan ^2.1. Dev: resource-bundle ^1.12, grid-bundle **^1.15**.
+- **Requirements**: PHP ^8.2, PHPStan ^2.2. Dev: resource-bundle ^1.12, grid-bundle **^1.15 | ^1.16**.
 - **grid-bundle support**: `>= 1.15`. CI exercises both `^1.15 <1.16` and `^1.16`; behaviour differs between them (see [Grid Bundle 1.16](#grid-bundle-116)).
 - **License**: MIT
 
@@ -32,10 +32,21 @@ src/
    ├─ Util/PropertyName.php                         # Utility for snake_case → camelCase conversion
    ├─ Sylius/
    │  ├─ Collector/Grid/
-   │  │  ├─ AbstractGridClassCollector.php           # Base: grid detection logic
+   │  │  ├─ AbstractGridClassCollector.php           # Base: grid + grid mutator detection logic
+   │  │  ├─ AbstractGridBuilderCallCollector.php     # Base: shared StaticCall processing for field/filter factories
+   │  │  ├─ AbstractGridBuilderFieldCollector.php    # Base: field factory collection (grid or mutator scope)
+   │  │  ├─ AbstractGridBuilderFilterCollector.php   # Base: filter factory collection (grid or mutator scope)
    │  │  ├─ CollectRessourceClassForGridClass.php    # Collector: grid ↔ resource mapping
-   │  │  ├─ CollectFieldsForGridClass.php            # Collector: grid field definitions
-   │  │  └─ CollectFilterForGridClass.php            # Collector: grid filter definitions
+   │  │  ├─ CollectGridNameForGridClass.php          # Collector: grid class → grid name (AsGrid name:, getName(), class name)
+   │  │  │
+   │  │  ├─ GridBuilder/
+   │  │  │  ├─ CollectFields.php                     # Collector: grid field definitions
+   │  │  │  └─ CollectFilter.php                     # Collector: grid filter definitions
+   │  │  │
+   │  │  └─ GridMutator/
+   │  │     ├─ CollectFields.php                     # Collector: mutator field definitions
+   │  │     ├─ CollectFilter.php                     # Collector: mutator filter definitions
+   │  │     └─ CollectGridNames.php                  # Collector: mutator class → grid names (#[AsGridMutator], repeatable)
    │  │
    │  ├─ Collector/Grid/Field/
    │  │  ├─ FieldNode.php                            # Interface for field type descriptors
@@ -53,9 +64,16 @@ src/
    │  │
    │  └─ Rule/
    │     ├─ Grid/
+   │     │  ├─ AbstractGridBuilderResourceRule.php      # Base: shared field/filter-vs-resource validation
    │     │  ├─ ResourceAwareGridNeedsResourceClass.php   # Rule: check grid resource class exists
-   │     │  ├─ GridBuilderFieldIsPartOfResourceClass.php # Rule: grid fields must match resource
-   │     │  └─ GridBuilderFilterIsPartOfResourceClass.php# Rule: grid filters must match resource
+   │     │  │
+   │     │  ├─ GridBuilder/
+   │     │  │  ├─ FieldIsPartOfResourceClass.php         # Rule: grid fields must match resource
+   │     │  │  └─ FilterIsPartOfResourceClass.php         # Rule: grid filters must match resource
+   │     │  │
+   │     │  └─ GridMutator/
+   │     │     ├─ FieldIsPartOfResourceClass.php         # Rule: mutator fields must match mutated grid's resource
+   │     │     └─ FilterIsPartOfResourceClass.php         # Rule: mutator filters must match mutated grid's resource
    │     │
    │     └─ Resource/
    │        ├─ IndexOperationNeedsGridClassRule.php      # Rule: Index metadata grid exists
@@ -103,8 +121,8 @@ PHPStan extensions in this project follow a two-phase approach:
 
 This separation improves performance (collectors can run in parallel) and keeps rules focused on analysis rather than parsing.
 
-> **Note**: `getNodeType()` is authoritative and must agree with the `@implements` generic. Both grid
-> rules return `CollectedDataNode::class`. The `processNode()` parameter stays typed as `Node` because
+> **Note**: `getNodeType()` is authoritative and must agree with the `@implements` generic. All four
+> grid builder/mutator rules return `CollectedDataNode::class`. The `processNode()` parameter stays typed as `Node` because
 > that is what `Rule::processNode()` declares, and narrowing a parameter is a contravariance
 > violation. Do **not** add a defensive `instanceof` guard to compensate — see
 > [Known Issue 2](#2-a-redundant-instanceof-guard-can-hide-a-wrong-implements).
@@ -114,10 +132,37 @@ This separation improves performance (collectors can run in parallel) and keeps 
 | Rule | Node Type | Key Logic |
 |------|-----------|-----------|
 | `ResourceAwareGridNeedsResourceClass` | `InClassNode` | Checks `#AsGrid(resourceClass:)` first, then `getResourceClass()` / `ResourceAwareGridInterface`, for an existing class. |
-| `GridBuilderFieldIsPartOfResourceClass` | `CollectedDataNode` | Validates every grid field exists as a property/getter on the resource class. Supports recursive fields (`address.city`). |
-| `GridBuilderFilterIsPartOfResourceClass` | `CollectedDataNode` | Validates every grid filter field exists on resource. Does **not** support recursive checks (dots are skipped). |
+| `GridBuilder\FieldIsPartOfResourceClass` | `CollectedDataNode` | Validates every grid field exists as a property/getter on the resource class. Supports recursive fields (`address.city`). |
+| `GridBuilder\FilterIsPartOfResourceClass` | `CollectedDataNode` | Validates every grid filter field exists on resource. Does **not** support recursive checks (dots are skipped). |
+| `GridMutator\FieldIsPartOfResourceClass` | `CollectedDataNode` | Same as the grid field rule, but for fields a grid mutator (`#[AsGridMutator]`) adds to the builder. Mutator → grid name → grid class → resource class; grid names are treated as unique. Supports recursive fields. |
+| `GridMutator\FilterIsPartOfResourceClass` | `CollectedDataNode` | Same as the grid filter rule, but for filters a grid mutator adds. Dots are skipped. |
 | `IndexOperationNeedsGridClassRule` | `InClassNode` | Validates `#[Index(grid: '...')]` refers to an existing grid class. |
 | `ResourceAttributeNeedsFormTypeRule` | `InClassNode` | Validates `#[AsResource(formType: '...')]` refers to an existing form type. |
+
+### Grid mutators
+
+Since grid-bundle 1.16 a grid can be mutated by classes tagged `#[AsGridMutator(grid: '<grid name>')]` implementing
+`Sylius\Component\Grid\Mutator\GridMutatorInterface`. The mutator receives a `GridBuilderInterface` and calls the
+same `addField()`/`addFilter()` factories as a grid. The attribute carries only the grid **name**, so the rules join
+`mutator class → grid name (GridMutator\CollectGridNames) → grid class (CollectGridNameForGridClass) → resource class
+(CollectRessourceClassForGridClass, or the AsGrid attribute via CollectGridNameForGridClass, because a 1.16 grid may
+declare nothing but the attribute)`. Grid names are assumed unique; the grid name is derived the way grid-bundle
+derives it — `#[AsGrid(name: '...')]` wins, then a constant-string `getName()` return, then the grid class name
+(the `InvokableGridPass` default and the convention mutators rely on). A grid with a *computed* custom name is not
+joined: its mutators' fields stay unvalidated, never falsely reported.
+The field/filter collectors share their logic with the grid ones via `AbstractGridBuilderCallCollector` +
+`AbstractGridBuilderFieldCollector`/`AbstractGridBuilderFilterCollector`; only the scope predicate differs
+(`scopeIsGrid()` vs `scopeIsGridMutator()`). The rules share `AbstractGridBuilderResourceRule`, which owns the
+resource-map resolution (`resolveGridResourceMap` / `resolveMutatorResourceMap`), the error attribution and the
+recursive dotted-path walk; concrete rules only pick the collector and the validation flavor.
+
+`AsGridMutator` is **repeatable**: one mutator class carrying the attribute twice mutates both grids, mirroring the
+`GridMutatorPass`, which registers the mutator once per attribute. The mutator collector therefore returns a list of
+grid names and the mutator maps to the list of all those grids' resource classes; every field/filter is validated
+against each of them. A mutator for an unknown grid name is silently not validated (no resource class to join).
+The interface fallback in `scopeIsGridMutator()` is inert on its own: fields of a class that merely implements
+`GridMutatorInterface` are collected, but without the attribute the class never enters the mutator→resource map,
+so nothing is validated — matching runtime, where the attribute is what registers a mutator.
 
 ---
 
@@ -136,13 +181,13 @@ This separation improves performance (collectors can run in parallel) and keeps 
 
 ---
 
-### `GridBuilderFieldIsPartOfResourceClass`
+### `GridBuilder\FieldIsPartOfResourceClass`
 
-- **Namespace**: `bitExpert\PHPStan\Sylius\Rule\Grid`
+- **Namespace**: `bitExpert\PHPStan\Sylius\Rule\Grid\GridBuilder`
 - **Node type**: `CollectedDataNode`
 - **Collectors used**:
   - `CollectRessourceClassForGridClass` → `gridClass → resourceClass`
-  - `CollectFieldsForGridClass` → `gridClass → [fieldName, line]`
+  - `GridBuilder\CollectFields` → `gridClass → [fieldName, line]`
 - **Validation**:
   - Non-dotted field names (e.g., `name`) → check property or `get{Name}` method.
   - Dotted field names (e.g., `address.city`) → recursive property traversal:
@@ -169,17 +214,29 @@ the recursive walk keeps it a `ClassReflection` (`resolveNextClass()` / `toClass
 
 ---
 
-### `GridBuilderFilterIsPartOfResourceClass`
+### `GridBuilder\FilterIsPartOfResourceClass`
 
-- **Namespace**: `bitExpert\PHPStan\Sylius\Rule\Grid`
+- **Namespace**: `bitExpert\PHPStan\Sylius\Rule\Grid\GridBuilder`
 - **Node type**: `CollectedDataNode`
 - **Collectors used**:
   - `CollectRessourceClassForGridClass` → `gridClass → resourceClass`
-  - `CollectFilterForGridClass` → `gridClass → [filterFieldList, line]`
+  - `GridBuilder\CollectFilter` → `gridClass → [filterFieldList, line]`
 - **Validation**:
   - Each filter field (from array) checked against resource class.
   - **No recursion**: Fields containing `.` (e.g., `address.city`) are **skipped** entirely.
 - **Error**: `sylius.grid.resourceClassMissingFilter` → `The filter field "%s" needs to exists as property in resource class "%s".`
+
+---
+
+### Mutator rule identifiers
+
+The mutator rules mirror the grid ones but emit their own identifiers, so users can ignore or baseline
+them separately:
+
+| Rule | Missing | Missing type (recursive) |
+|------|---------|---------------------------|
+| `GridMutator\FieldIsPartOfResourceClass` | `sylius.grid.mutatorResourceClassMissingProperty` | `sylius.grid.mutatorResourceClassPropertyMissingType` |
+| `GridMutator\FilterIsPartOfResourceClass` | `sylius.grid.mutatorResourceClassMissingFilter` | — |
 
 ---
 
@@ -212,6 +269,10 @@ the recursive walk keeps it a `ClassReflection` (`resolveNextClass()` / `toClass
   - `scopeIsGrid(Scope $scope): bool`
     - Checks for `#AsGrid` attribute OR subclass of `Sylius\Bundle\GridBundle\Grid\AbstractGrid`.
     - Catches any `Throwable` to avoid crashes.
+  - `scopeIsGridMutator(Scope $scope): bool`
+    - Checks for `#AsGridMutator` attribute, falling back to implementations of
+      `Sylius\Component\Grid\Mutator\GridMutatorInterface`. Only parseable on grid-bundle >= 1.16;
+      the attribute check is what registers a mutator, the interface fallback alone is inert.
   - `isSubtypeOf(Type $type, string $superType): bool`
     - Returns `true` if `$type` is a subtype of `$superType`.
 - **Usage**: All grid collectors extend this.
@@ -232,7 +293,7 @@ the recursive walk keeps it a `ClassReflection` (`resolveNextClass()` / `toClass
 
 ---
 
-### `CollectFieldsForGridClass`
+### `GridBuilder\CollectFields`
 
 - **Type**: `Collector<StaticCall, array{string, string, int}>`
 - **Validates node**:
@@ -248,7 +309,7 @@ the recursive walk keeps it a `ClassReflection` (`resolveNextClass()` / `toClass
 
 ---
 
-### `CollectFilterForGridClass`
+### `GridBuilder\CollectFilter`
 
 - **Type**: `Collector<StaticCall, array{string, non-empty-array<string>, -1|int<1, max>}>` (doc declares `-1|positive int` but actual line numbers are positive)
 - **Validates node**:
@@ -341,7 +402,7 @@ name, and every node falls back to it.
 - **Registry order matters: keep the catch-all `Filter` node last.** First `supports()` match wins, so an
   earlier catch-all shadows any node registered after it — in particular a user's custom node. Only the
   catch-all is interface-based; the others match one concrete class name each, so the built-in set of
-  outcomes is order-independent. `GridBuilderFilterIsPartOfResourceClassUnitTest` drives both orders
+  outcomes is order-independent. `GridBuilder\FilterIsPartOfResourceClassUnitTest` drives both orders
   against `grid_custom_filter.php` to show which node wins; keeping the shipped order in
   `extension.neon` correct is a manual job.
 - The catch-all is the *only* interface-based node, and only `Filter` itself implements `FilterInterface`.
@@ -391,15 +452,19 @@ Consequences:
   ```neon
   rules:
     - bitExpert\PHPStan\Sylius\Rule\Grid\ResourceAwareGridNeedsResourceClass
-    - bitExpert\PHPStan\Sylius\Rule\Grid\GridBuilderFieldIsPartOfResourceClass
-    - bitExpert\PHPStan\Sylius\Rule\Grid\GridBuilderFilterIsPartOfResourceClass
+    - bitExpert\PHPStan\Sylius\Rule\Grid\GridBuilder\FieldIsPartOfResourceClass
+    - bitExpert\PHPStan\Sylius\Rule\Grid\GridBuilder\FilterIsPartOfResourceClass
+    - bitExpert\PHPStan\Sylius\Rule\Grid\GridMutator\FieldIsPartOfResourceClass
+    - bitExpert\PHPStan\Sylius\Rule\Grid\GridMutator\FilterIsPartOfResourceClass
     - bitExpert\PHPStan\Sylius\Rule\Resource\IndexOperationNeedsGridClassRule
     - bitExpert\PHPStan\Sylius\Rule\Resource\ResourceAttributeNeedsFormTypeRule
   ```
 - **Services**:
   - `FieldRegistryFactory` → `syliusFieldTypeRegistry` via `createRegistry()`.
   - `FilterRegistryFactory` → `syliusFilterTypeRegistry`.
-  - Collectors (`CollectRessourceClassForGridClass`, `CollectFieldsForGridClass`, `CollectFilterForGridClass`) tagged `phpstan.collector`.
+  - Collectors (`CollectRessourceClassForGridClass`, `CollectGridNameForGridClass`, `GridBuilder\CollectFields`,
+    `GridBuilder\CollectFilter`, `GridMutator\CollectFields`, `GridMutator\CollectFilter`, `GridMutator\CollectGridNames`)
+    tagged `phpstan.collector`.
   - All field/filter nodes tagged with `phpstan.sylius.grid.field` / `phpstan.sylius.grid.filter`.
   - Filter nodes are registered specific-first; the catch-all `Filter` node is deliberately last.
 
@@ -436,9 +501,10 @@ Prefer that over an interface check: interface-based nodes compete with the catc
 - **Configuration**: `phpunit.xml.dist` (suffix `UnitTest.php`, bootstrap `tests/bootstrap.php`).
 - **Rules** use `PHPStan\Testing\RuleTestCase`.
 - **Utility/Registry** use standard `PHPUnit\Framework\TestCase`.
-- 20 tests total. The count is 20 on every lane, but assertions differ by grid-bundle lane: 21 on `^1.15
-  <1.16` (1 skipped — the `Sylius\Component\Grid\GridInterface` case needs `>= 1.16`) and 22 on `^1.16`
-  (nothing skipped). A 21/22 split is expected; a 20-vs-something split is not.
+- 29 tests total. The count is 29 on every lane, but assertions differ by grid-bundle lane: 22 on `^1.15
+  <1.16` (9 skipped — the 8 grid-mutator tests need `GridMutatorInterface` from `>= 1.16`, plus the
+  `Sylius\Component\Grid\GridInterface` case) and 31 on `^1.16` (nothing skipped). A 22/31 split is
+  expected; a 29-vs-something split is not.
 
 #### Gotchas that make tests lie
 
@@ -481,10 +547,14 @@ Prefer that over an interface check: interface-based nodes compete with the catc
 | `IndexOperationNeedsGridClassUnitTest` | Validates `Index` grid reference | `Rule/Resource/data/entity_index.php` |
 | `ResourceAwareGridNeedsResourceClassUnitTest` | Missing resource class (old, attribute, 1.16-native, method-less) | `grid_needs_resource_model.php`, `grid_needs_resource_model_attr.php`, `grid_needs_resource_model_native_interface.php`, `grid_needs_resource_model_no_methods.php` |
 | `ResourceAwareGridNeedsResourceClassValidUnitTest` | Validates correct configurations | `grid_valid.php`, `grid_valid_attr.php` |
-| `GridBuilderFieldIsPartOfResourceClassUnitTest` | Invalid field detection (incl. `createForService`) | `grid.php` |
-| `GridBuilderFieldIsPartOfResourceClassValidUnitTest` | Validates correct grids | `grid_valid.php` |
-| `GridBuilderFilterIsPartOfResourceClassUnitTest` | Invalid filter detection, plus registry-order (catch-all vs. dedicated node) | `grid.php`, `grid_custom_filter.php`, `custom_filter.php` |
-| `GridBuilderFilterIsPartOfResourceClassValidUnitTest` | Validates correct grids | `grid_valid.php` |
+| `GridBuilder\FieldIsPartOfResourceClassUnitTest` | Invalid field detection (incl. `createForService`) | `grid.php` |
+| `GridBuilder\FieldIsPartOfResourceClassValidUnitTest` | Validates correct grids | `grid_valid.php` |
+| `GridBuilder\FilterIsPartOfResourceClassUnitTest` | Invalid filter detection, plus registry-order (catch-all vs. dedicated node) | `grid.php`, `grid_custom_filter.php`, `custom_filter.php` |
+| `GridBuilder\FilterIsPartOfResourceClassValidUnitTest` | Validates correct grids | `grid_valid.php` |
+| `GridMutator\FieldIsPartOfResourceClassUnitTest` | Invalid mutator field detection (incl. recursive dotted path) | `grid_named.php`, `grid_mutator.php` |
+| `GridMutator\FieldIsPartOfResourceClassValidUnitTest` | Validates correct mutator fields | `grid_named.php`, `grid_mutator_valid.php` |
+| `GridMutator\FilterIsPartOfResourceClassUnitTest` | Invalid mutator filter detection | `grid_named.php`, `grid_mutator.php` |
+| `GridMutator\FilterIsPartOfResourceClassValidUnitTest` | Validates correct mutator filters | `grid_named.php`, `grid_mutator_valid.php` |
 | `DefaultFilterRegistryUnitTest` | Registry functionality | None |
 
 ### Fixtures
@@ -498,6 +568,10 @@ All fixtures (for analysis) reside under `tests/bitExpert/PHPStan/Sylius/Rule/*/
 - `grid_needs_resource_model.php` / `_attr.php` / `_no_methods.php` / `_native_interface.php`: resource-class detection cases.
 - `custom_filter.php`: namespace `App\Filter`, declaring `class CustomFilter`; a user-style filter that implements `FilterInterface`, so the catch-all matches it by interface. Implements every method for real so PHPStan verifies the signatures on both lanes.
 - `grid_custom_filter.php`: `GridCustomFilter`, holding the one `CustomFilter::create()` call whose extracted field differs depending on which node wins.
+- `grid_named.php`: `AdminSupplierNamedGrid`, a grid whose `getName()` returns its class name, so a mutator can reference it by name.
+- `grid_named_attr.php` / `grid_named_custom.php` / `grid_named_medipack.php`: attribute-only grids (`#[AsGrid(resourceClass: ...)]`, no methods) — the 1.16 shape — one with an explicit `name:` argument, one with `Medipack` as resource class for the repeatable-mutator join.
+- `grid_mutator.php` / `grid_mutator_valid.php` (namespace `App\Grid\Mutator`): grid mutators (`#[AsGridMutator]`, `GridMutatorInterface`) with invalid/valid field and filter definitions, plus a mutator for an unknown grid name and a non-mutator class. Guarded by `interface_exists(GridMutatorInterface::class)` and excluded from self-analysis, since mutators only parse on grid-bundle >= 1.16.
+- `grid_mutator_names.php` / `grid_mutator_repeatable.php`: mutators joining via class name, via an explicit `#[AsGrid(name: ...)]`, and a repeatable mutator attached to two grids, proving fields/filters are validated against every joined resource class.
 
 `Rule/Resource/data/` (namespace `App\Entity`):
 - `entity.php`: `Entity`, implementing `ResourceInterface`.
@@ -585,13 +659,13 @@ class constants, a PHP 8.3 feature). Symlink the target PHP into a throwaway bin
   changelog when bumping the floor.
 
 ### 4. Recursive Filter Fields Skipped
-- The rule `GridBuilderFilterIsPartOfResourceClass` skips any filter field containing `.` (e.g., `address.city`).
+- The rule `GridBuilder\FilterIsPartOfResourceClass` skips any filter field containing `.` (e.g., `address.city`).
 - **Rationale**: Filters typically do not need recursive access, but this may be overly restrictive.
 - **Consequence**: Users cannot validate recursive filter fields.
 
 ### 5. Field errors are attributed to the grid's file, not the node's
-- Both grid rules use `$gridFilesMap[$gridClass]`, which is **last-write-wins per grid class** and shared
-  by all fields of that grid.
+- All four grid builder/mutator rules use `$ownerFilesMap[$ownerClass]`, which is **last-write-wins per owning class** (grid
+  or mutator) and shared by all fields of that owner.
 - **Impact**: A grid split across multiple files reports every field error against whichever file was seen
   last. Fields inside a trait are always attributed to the using class, because the node's real file is not
   recoverable: PHP-Parser 5 exposes only an integer `startFilePos` (no path), and `Scope::getFile()`,
@@ -609,7 +683,7 @@ class constants, a PHP 8.3 feature). Symlink the target PHP into a throwaway bin
   `Rule/Resource/data` from the finder. Do not drop those exclusions: `composer cs` is a CI step, and a
   local `cs-fix` would rewrite fixture classes, breaking the references between fixtures.
 - The failure mode is a *missing* error, not a wrong one. A renamed fixture class makes the call site
-  name a non-existent class, `CollectFilterForGridClass` can no longer resolve a `FilterInterface`
+  name a non-existent class, `GridBuilder\CollectFilter` can no longer resolve a `FilterInterface`
   return type, the call is silently skipped, and the test fails only on the missing expected error. So a
   green-looking `composer cs-fix` followed by a red test usually means the fixer edited a fixture.
 - **Action**: fixture file names stay snake_case and lowercase, fixture classes are always PSR-1. When
@@ -655,4 +729,4 @@ class constants, a PHP 8.3 feature). Symlink the target PHP into a throwaway bin
 
 ---
 
-*Last updated: 2026-09-26*
+*Last updated: 2026-10-30*

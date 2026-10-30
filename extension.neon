@@ -1,7 +1,9 @@
 rules:
 	- bitExpert\PHPStan\Sylius\Rule\Grid\ResourceAwareGridNeedsResourceClass
-	- bitExpert\PHPStan\Sylius\Rule\Grid\GridBuilderFieldIsPartOfResourceClass
-	- bitExpert\PHPStan\Sylius\Rule\Grid\GridBuilderFilterIsPartOfResourceClass
+	- bitExpert\PHPStan\Sylius\Rule\Grid\GridBuilder\FieldIsPartOfResourceClass
+	- bitExpert\PHPStan\Sylius\Rule\Grid\GridBuilder\FilterIsPartOfResourceClass
+	- bitExpert\PHPStan\Sylius\Rule\Grid\GridMutator\FieldIsPartOfResourceClass
+	- bitExpert\PHPStan\Sylius\Rule\Grid\GridMutator\FilterIsPartOfResourceClass
 	- bitExpert\PHPStan\Sylius\Rule\Resource\IndexOperationNeedsGridClassRule
 	- bitExpert\PHPStan\Sylius\Rule\Resource\ResourceAttributeNeedsFormTypeRule
 
@@ -11,12 +13,26 @@ services:
 		tags:
 			- phpstan.collector
 	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\CollectGridNameForGridClass
+		tags:
+			- phpstan.collector
+	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\GridMutator\CollectGridNames
+		tags:
+			- phpstan.collector
+	-
 		class: bitExpert\PHPStan\Sylius\Collector\Grid\Field\FieldRegistryFactory
 	syliusFieldTypeRegistry:
 		class: bitExpert\PHPStan\Sylius\Collector\Grid\Field\DefaultFieldRegistry
 		factory: @bitExpert\PHPStan\Sylius\Collector\Grid\Field\FieldRegistryFactory::createRegistry
 	-
-		class: bitExpert\PHPStan\Sylius\Collector\Grid\CollectFieldsForGridClass
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\GridBuilder\CollectFields
+		arguments:
+			fieldRegistry: @syliusFieldTypeRegistry
+		tags:
+			- phpstan.collector
+	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\GridMutator\CollectFields
 		arguments:
 			fieldRegistry: @syliusFieldTypeRegistry
 		tags:
@@ -52,7 +68,13 @@ services:
 		class: bitExpert\PHPStan\Sylius\Collector\Grid\Filter\DefaultFilterRegistry
 		factory: @bitExpert\PHPStan\Sylius\Collector\Grid\Filter\FilterRegistryFactory::createRegistry
 	-
-		class: bitExpert\PHPStan\Sylius\Collector\Grid\CollectFilterForGridClass
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\GridBuilder\CollectFilter
+		arguments:
+			filterRegistry: @syliusFilterTypeRegistry
+		tags:
+			- phpstan.collector
+	-
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\GridMutator\CollectFilter
 		arguments:
 			filterRegistry: @syliusFilterTypeRegistry
 		tags:

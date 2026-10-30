@@ -44,6 +44,32 @@ abstract class AbstractGridClassCollector
         return false;
     }
 
+    protected function scopeIsGridMutator(Scope $scope): bool
+    {
+        try {
+            $classReflection = $scope->getClassReflection();
+
+            if (null !== $classReflection) {
+                // grid mutators are marked with the #AsGridMutator attribute
+                $attributes = $classReflection->getAttributes();
+                foreach ($attributes as $attribute) {
+                    if ('Sylius\Component\Grid\Attribute\AsGridMutator' === $attribute->getName()) {
+                        return true;
+                    }
+                }
+
+                // fallback: check for implementations of \Sylius\Component\Grid\Mutator\GridMutatorInterface
+                $mutatorType = new ObjectType('\Sylius\Component\Grid\Mutator\GridMutatorInterface');
+                $classType = new ObjectType($classReflection->getName());
+
+                return $mutatorType->isSuperTypeOf($classType)->yes();
+            }
+        } catch (\Throwable $e) {
+        }
+
+        return false;
+    }
+
     protected function isSubtypeOf(Type $type, string $superType): bool
     {
         try {

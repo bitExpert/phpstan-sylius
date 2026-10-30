@@ -10,9 +10,8 @@
  */
 declare(strict_types=1);
 
-namespace bitExpert\PHPStan\Sylius\Rule\Grid;
+namespace bitExpert\PHPStan\Sylius\Rule\Grid\GridBuilder;
 
-use bitExpert\PHPStan\Sylius\Collector\Grid\CollectFilterForGridClass;
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectRessourceClassForGridClass;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\DefaultFilterRegistry;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\EntityFilter;
@@ -21,18 +20,19 @@ use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\ExistsFilter;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\Filter;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\SelectFilter;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\StringFilter;
+use bitExpert\PHPStan\Sylius\Collector\Grid\GridBuilder\CollectFilter;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * @extends RuleTestCase<GridBuilderFilterIsPartOfResourceClass>
+ * @extends RuleTestCase<FilterIsPartOfResourceClass>
  */
-class GridBuilderFilterIsPartOfResourceClassValidUnitTest extends RuleTestCase
+class FilterIsPartOfResourceClassValidUnitTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {
-        return new GridBuilderFilterIsPartOfResourceClass($this->createReflectionProvider());
+        return new FilterIsPartOfResourceClass($this->createReflectionProvider());
     }
 
     protected function getCollectors(): array
@@ -47,7 +47,7 @@ class GridBuilderFilterIsPartOfResourceClassValidUnitTest extends RuleTestCase
 
         return [
             new CollectRessourceClassForGridClass(),
-            new CollectFilterForGridClass(new DefaultFilterRegistry($filters)),
+            new CollectFilter(new DefaultFilterRegistry($filters)),
         ];
     }
 
@@ -55,7 +55,7 @@ class GridBuilderFilterIsPartOfResourceClassValidUnitTest extends RuleTestCase
     public function ruleSucceedsWhenAllFilterFieldsExist(): void
     {
         $this->analyse(
-            [__DIR__ . '/data/grid_valid.php'],
+            [__DIR__ . '/../data/grid_valid.php'],
             [],
         );
     }
