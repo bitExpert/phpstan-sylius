@@ -10,9 +10,8 @@
  */
 declare(strict_types=1);
 
-namespace bitExpert\PHPStan\Sylius\Rule\Grid;
+namespace bitExpert\PHPStan\Sylius\Rule\Grid\GridBuilder;
 
-use bitExpert\PHPStan\Sylius\Collector\Grid\CollectFieldsForGridClass;
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectRessourceClassForGridClass;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Field\CallableFieldNode;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Field\DateTimeFieldNode;
@@ -21,18 +20,19 @@ use bitExpert\PHPStan\Sylius\Collector\Grid\Field\EnumFieldNode;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Field\GenericFieldNode;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Field\StringFieldNode;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Field\TwigFieldNode;
+use bitExpert\PHPStan\Sylius\Collector\Grid\GridBuilder\CollectFields;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * @extends RuleTestCase<GridBuilderFieldIsPartOfResourceClass>
+ * @extends RuleTestCase<FieldIsPartOfResourceClass>
  */
-class GridBuilderFieldIsPartOfResourceClassValidUnitTest extends RuleTestCase
+class FieldIsPartOfResourceClassValidUnitTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {
-        return new GridBuilderFieldIsPartOfResourceClass($this->createReflectionProvider());
+        return new FieldIsPartOfResourceClass($this->createReflectionProvider());
     }
 
     protected function getCollectors(): array
@@ -47,7 +47,7 @@ class GridBuilderFieldIsPartOfResourceClassValidUnitTest extends RuleTestCase
 
         return [
             new CollectRessourceClassForGridClass(),
-            new CollectFieldsForGridClass(new DefaultFieldRegistry($fields)),
+            new CollectFields(new DefaultFieldRegistry($fields)),
         ];
     }
 
@@ -55,7 +55,7 @@ class GridBuilderFieldIsPartOfResourceClassValidUnitTest extends RuleTestCase
     public function ruleSucceedsWhenAllFieldsExist(): void
     {
         $this->analyse(
-            [__DIR__ . '/data/grid_valid.php'],
+            [__DIR__ . '/../data/grid_valid.php'],
             [],
         );
     }

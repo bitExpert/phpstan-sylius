@@ -13,19 +13,20 @@ declare(strict_types=1);
 namespace bitExpert\PHPStan\Sylius\Collector\Grid;
 
 use bitExpert\PHPStan\Sylius\Collector\Grid\Field\FieldRegistry;
-use PhpParser\Node;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Identifier;
 use PhpParser\Node\Name\FullyQualified;
 use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
-use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
 
 /**
+ * Collects the field factory calls of a grid builder, no matter whether the
+ * builder is used inside a grid class or inside a grid mutator.
+ *
  * @implements Collector<StaticCall, array{string, string, int}>
  */
-final class CollectFieldsForGridClass extends AbstractGridClassCollector implements Collector
+abstract class AbstractGridBuilderFieldCollector extends AbstractGridBuilderCallCollector implements Collector
 {
     /**
      * Grid fields are built through a static factory. Every field class uses create(),
@@ -39,37 +40,28 @@ final class CollectFieldsForGridClass extends AbstractGridClassCollector impleme
     }
 
     /**
-     * @return class-string
+     * Whether the current scope belongs to a grid or to a grid mutator.
      */
-    public function getNodeType(): string
+    abstract protected function scopeIsBuilderScope(Scope $scope): bool;
+
+    protected function isBuilderCall(StaticCall $node, Scope $scope): bool
     {
-        return StaticCall::class;
+        if (!$node->name instanceof Identifier || !\in_array($node->name->toString(), self::FACTORY_METHODS, true)) {
+            return false;
+        }
+
+        if (!$this->scopeIsBuilderScope($scope)) {
+            return false;
+        }
+
+        return $this->isFieldInterfaceReturnType($scope->getType($node));
     }
 
-    public function processNode(Node $node, Scope $scope): ?array
+    /**
+     * @return array{string, string, int}|null
+     */
+    protected function collect(StaticCall $node, string $className): ?array
     {
-        if (!$node instanceof StaticCall) {
-            return null;
-        }
-
-        if (!$node->name instanceof Identifier || !\in_array($node->name->toString(), self::FACTORY_METHODS, true)) {
-            return null;
-        }
-
-        if (!$this->scopeIsGrid($scope)) {
-            return null;
-        }
-
-        if (!$this->isFieldInterfaceReturnType($scope->getType($node))) {
-            return null;
-        }
-
-        $classReflection = $scope->getClassReflection();
-        if (null === $classReflection) {
-            return null;
-        }
-
-        $classType = new ObjectType($classReflection->getName());
         /** @var FullyQualified $nodeClass */
         $nodeClass = $node->class;
 
@@ -87,7 +79,7 @@ final class CollectFieldsForGridClass extends AbstractGridClassCollector impleme
                     return null;
                 }
 
-                return [$classType->getClassName(), $fieldNames[0], $node->getLine()];
+                return [$className, $fieldNames[0], $node->getLine()];
             }
         }
 

@@ -10,9 +10,8 @@
  */
 declare(strict_types=1);
 
-namespace bitExpert\PHPStan\Sylius\Rule\Grid;
+namespace bitExpert\PHPStan\Sylius\Rule\Grid\GridBuilder;
 
-use bitExpert\PHPStan\Sylius\Collector\Grid\CollectFieldsForGridClass;
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectRessourceClassForGridClass;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Field\CallableFieldNode;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Field\DateTimeFieldNode;
@@ -21,17 +20,18 @@ use bitExpert\PHPStan\Sylius\Collector\Grid\Field\EnumFieldNode;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Field\GenericFieldNode;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Field\StringFieldNode;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Field\TwigFieldNode;
+use bitExpert\PHPStan\Sylius\Collector\Grid\GridBuilder\CollectFields;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 
 /**
- * @extends RuleTestCase<GridBuilderFieldIsPartOfResourceClass>
+ * @extends RuleTestCase<FieldIsPartOfResourceClass>
  */
-class GridBuilderFieldIsPartOfResourceClassUnitTest extends RuleTestCase
+class FieldIsPartOfResourceClassUnitTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {
-        return new GridBuilderFieldIsPartOfResourceClass($this->createReflectionProvider());
+        return new FieldIsPartOfResourceClass($this->createReflectionProvider());
     }
 
     protected function getCollectors(): array
@@ -46,14 +46,14 @@ class GridBuilderFieldIsPartOfResourceClassUnitTest extends RuleTestCase
 
         return [
             new CollectRessourceClassForGridClass(),
-            new CollectFieldsForGridClass(new DefaultFieldRegistry($fields)),
+            new CollectFields(new DefaultFieldRegistry($fields)),
         ];
     }
 
     public function testRule(): void
     {
         $this->analyse(
-            [__DIR__ . '/data/grid.php'],
+            [__DIR__ . '/../data/grid.php'],
             [
                 [
                     'The field "name" needs to exists as property in class "App\Entity\Supplier".',
@@ -89,7 +89,7 @@ class GridBuilderFieldIsPartOfResourceClassUnitTest extends RuleTestCase
     public function testRecursiveWithNullable(): void
     {
         $this->analyse(
-            [__DIR__ . '/data/grid_recursive.php'],
+            [__DIR__ . '/../data/grid_recursive.php'],
             [
                 [
                     // The "unknown" segment is looked up on App\Entity\Patient (the

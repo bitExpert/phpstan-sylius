@@ -40,6 +40,8 @@ The following rules have been implemented:
 -   - custom field types are supported
 - Rule to check that configured filter fields belong to the configured resource class
   - custom filter types are supported
+- Rule to check that fields added by a grid mutator (`#[AsGridMutator]`) belong to the resource class of the mutated grid
+- Rule to check that filters added by a grid mutator (`#[AsGridMutator]`) belong to the resource class of the mutated grid
 - Rule to check that grid class configured via the `Index` attribute exists
 - Rule to check that form type configured via the `AsResource` attribute exists
 
