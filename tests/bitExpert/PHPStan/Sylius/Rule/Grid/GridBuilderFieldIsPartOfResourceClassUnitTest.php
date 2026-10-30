@@ -69,11 +69,11 @@ class GridBuilderFieldIsPartOfResourceClassUnitTest extends RuleTestCase
                     43,
                 ],
                 [
-                    // Third segment of a recursive field. Once the walk leaves the
-                    // ClassReflection it queried a Type, and Type::hasProperty()
-                    // answers with a TrinaryLogic whose cast to bool is always true,
-                    // so every segment past the first silently passed.
-                    'The field "missingThirdSegment" needs to exists as property in class "App\Entity\Supplier".',
+                    // Third segment of a recursive field. The first two segments
+                    // ("address", "country") resolve to App\Entity\Country, so the
+                    // missing third segment is looked up on — and reported
+                    // against — that class, not the grid's root resource class.
+                    'The field "missingThirdSegment" needs to exists as property in class "App\Entity\Country".',
                     61,
                 ],
                 [
@@ -81,6 +81,32 @@ class GridBuilderFieldIsPartOfResourceClassUnitTest extends RuleTestCase
                     // which only accepted a static call named create().
                     'The field "missingCallableServiceField" needs to exists as property in class "App\Entity\Supplier".',
                     67,
+                ],
+            ],
+        );
+    }
+
+    public function testRecursiveWithNullable(): void
+    {
+        $this->analyse(
+            [__DIR__ . '/data/grid_recursive.php'],
+            [
+                [
+                    // The "unknown" segment is looked up on App\Entity\Patient (the
+                    // type the "patient" segment resolved to), so the error names
+                    // that class, not the grid's root resource class.
+                    'The field "unknown" needs to exists as property in class "App\Entity\Patient".',
+                    25,
+                ],
+                [
+                    'Unable to identify the type of the field "untyped" in class "App\Entity\Medipack".',
+                    28,
+                ],
+                [
+                    // The "missingRoot" segment is looked up directly on the grid's
+                    // root resource class, so the error still names it.
+                    'The field "missingRoot" needs to exists as property in class "App\Entity\Medipack".',
+                    31,
                 ],
             ],
         );

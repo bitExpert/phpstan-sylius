@@ -67,3 +67,35 @@ class Supplier implements ResourceInterface
         return 'Method without a property';
     }
 }
+
+class Patient
+{
+    private string $name;
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+}
+
+class Medipack implements ResourceInterface
+{
+    private Patient $patient;
+
+    private $untyped;
+
+    public function getId(): int
+    {
+        return 0;
+    }
+
+    public function getPatient(): ?Patient
+    {
+        return $this->patient;
+    }
+
+    public function getUntyped()
+    {
+        return $this->untyped;
+    }
+}

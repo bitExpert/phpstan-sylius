@@ -36,6 +36,7 @@
     "files": [
       "tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/entity.php",
       "tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid.php",
+      "tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid_recursive.php",
       "tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/custom_filter.php",
       "tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid_custom_filter.php",
       "tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid_needs_resource_model.php",
