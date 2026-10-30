@@ -22,7 +22,7 @@ use PHPStan\Reflection\MissingPropertyFromReflectionException;
 use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
-use PHPStan\Type\Type;
+use PHPStan\Type\TypeCombinator;
 
 /**
  * @implements Rule<CollectedDataNode>
@@ -119,7 +119,7 @@ readonly class GridBuilderFieldIsPartOfResourceClass implements Rule
                             $message = \sprintf(
                                 'The field "%s" needs to exists as property in class "%s".',
                                 $segment,
-                                $resourceClassName,
+                                $resourceClass->getName(),
                             );
 
                             $errors[] = RuleErrorBuilder::message($message)
@@ -127,12 +127,10 @@ readonly class GridBuilderFieldIsPartOfResourceClass implements Rule
                                 ->file($gridFilesMap[$gridClassName])
                                 ->line($lineNo)
                                 ->build();
+
+                            break;
                         }
 
-                        // Resolve the type of this segment to keep walking. It has to
-                        // stay a ClassReflection: Type::hasProperty() answers with a
-                        // TrinaryLogic, and casting that object to bool is always
-                        // true, so every later segment would silently pass.
                         $nextClass = $this->resolveNextClass($resourceClass, $segment, $getterMethod, $scope);
                         if (null === $nextClass) {
                             if (\count($fieldNames) > 0) {
@@ -172,39 +170,37 @@ readonly class GridBuilderFieldIsPartOfResourceClass implements Rule
         string $getterMethod,
         Scope $scope,
     ): ?ClassReflection {
+        $candidates = [];
+
         try {
-            return $this->toClassReflection($class->getMethod($getterMethod, $scope)->getOnlyVariant()->getReturnType());
+            $candidates[] = $class->getMethod($getterMethod, $scope)->getOnlyVariant()->getReturnType();
         } catch (\Exception) {
-            // The getter is absent or is not resolvable, so fall back to the property.
         }
 
         try {
             $property = $class->getProperty($segment, $scope);
             if ($property->hasNativeType()) {
-                return $this->toClassReflection($property->getNativeType());
-            }
-
-            if ($property->hasPHPDocType()) {
-                return $this->toClassReflection($property->getPhpDocType());
+                $candidates[] = $property->getNativeType();
+            } elseif ($property->hasPHPDocType()) {
+                $candidates[] = $property->getPhpDocType();
             }
         } catch (MissingPropertyFromReflectionException) {
-            // Reported by the caller as a missing property on the parent segment.
+        }
+
+        foreach ($candidates as $candidate) {
+            $candidate = TypeCombinator::removeNull($candidate);
+            if (!$candidate->isObject()->yes()) {
+                continue;
+            }
+            $classNames = $candidate->getObjectClassNames();
+            if (1 === \count($classNames)) {
+                try {
+                    return $this->broker->getClass($classNames[0]);
+                } catch (\Throwable) {
+                }
+            }
         }
 
         return null;
-    }
-
-    private function toClassReflection(Type $type): ?ClassReflection
-    {
-        $classNames = $type->getObjectClassNames();
-        if (1 !== \count($classNames)) {
-            return null;
-        }
-
-        try {
-            return $this->broker->getClass($classNames[0]);
-        } catch (\Throwable) {
-            return null;
-        }
     }
 }
