@@ -77,7 +77,8 @@ src/
    │     │
    │     └─ Resource/
    │        ├─ IndexOperationNeedsGridClassRule.php      # Rule: Index metadata grid exists
-   │        └─ ResourceAttributeNeedsFormTypeRule.php    # Rule: AsResource form type exists
+   │        ├─ ResourceAttributeNeedsFormTypeRule.php    # Rule: AsResource form type exists
+   │        └─ CreateOperationNeedsFactoryRule.php       # Rule: Create operation factory class/method exists
 ```
 
 **Note**: `CollectRessourceClassForGridClass.php` contains a typo: `Ressource` (double `s`), which is preserved for historical compatibility.
@@ -138,6 +139,7 @@ This separation improves performance (collectors can run in parallel) and keeps 
 | `GridMutator\FilterIsPartOfResourceClass` | `CollectedDataNode` | Same as the grid filter rule, but for filters a grid mutator adds. Dots are skipped. |
 | `IndexOperationNeedsGridClassRule` | `InClassNode` | Validates `#[Index(grid: '...')]` refers to an existing grid class. |
 | `ResourceAttributeNeedsFormTypeRule` | `InClassNode` | Validates `#[AsResource(formType: '...')]` refers to an existing form type. |
+| `CreateOperationNeedsFactoryRule` | `InClassNode` | Validates the `factory`/`factoryMethod` of a `Create` operation (class exists, method exists, `createNew` default, callable must be static). |
 
 ### Grid mutators
 
@@ -257,6 +259,40 @@ them separately:
 - **Scope**: Classes implementing `Sylius\Resource\Model\ResourceInterface`.
 - **Checks**: `#[Sylius\Resource\Metadata\AsResource(formType: 'App\Form\MyType')]`
 - **Error**: `sylius.resource.formTypeNotFound` → `Form Type "%s" not found!`
+
+---
+
+### `CreateOperationNeedsFactoryRule`
+
+- **Namespace**: `bitExpert\PHPStan\Sylius\Rule\Resource`
+- **Node type**: `InClassNode`
+- **Scope**: Classes implementing `Sylius\Resource\Model\ResourceInterface`.
+- **Checks**: `#[Sylius\Resource\Metadata\Create]` attributes, both declared directly on the class and
+  nested as `new Create(...)` inside `#[AsResource(operations: [...])]`.
+- **Behaviour**:
+  - `factory: BookFactory::class` (or a constant string class name) → the class must exist.
+  - `factoryMethod: 'createForAuthor'` → the method must exist on the factory class (instance
+    method, matching `$factoryInstance->$factoryMethod(...)` in `State\Factory`).
+  - `factory` without `factoryMethod` → the ResourceBundle defaults the method to `createNew`
+    (`FactoryResourceMetadataCollectionFactory::addDefaults()`), so `createNew` must exist.
+  - `factory: [BookFactory::class, 'create']` (callable form) → the class must exist, the method
+    must exist **and be static**, because the runtime invokes the callable statically
+    (`is_callable(['NonStaticClass', 'method'])` is false for instance methods).
+  - `factory: false` disables the factory → skipped. `factory: null`/`true` → skipped.
+  - Non-constant arguments (variables, `new stdClass()`, method calls) are skipped silently; the
+    analysis is never aborted for them.
+  - Positional arguments are not mapped: the `Create` constructor declares more than twenty
+    parameters before `factory`, so only named arguments are read.
+  - A `factoryMethod` that is present but not a constant string skips the method check entirely
+    (the runtime would call the expression's value, not the `createNew` default).
+- **Errors**:
+  - `sylius.resource.factoryClassNotFound` → `Factory class "%s" not found!`
+  - `sylius.resource.factoryMethodNotFound` → `Factory method "%s" not found on factory class "%s"!`
+  - `sylius.resource.factoryMethodNotStatic` → `Factory method "%s" on factory class "%s" has to be static when the factory is passed as callable!`
+- **Note**: reads the AST instead of `AttributeReflection`, because nested `new Create(...)`
+  expressions inside attribute arguments are not reachable through the attribute reflection API.
+  PHPStan's parser resolves all class names to their fully qualified form, so a plain string
+  comparison identifies the attributes.
 
 ---
 
@@ -458,6 +494,7 @@ Consequences:
     - bitExpert\PHPStan\Sylius\Rule\Grid\GridMutator\FilterIsPartOfResourceClass
     - bitExpert\PHPStan\Sylius\Rule\Resource\IndexOperationNeedsGridClassRule
     - bitExpert\PHPStan\Sylius\Rule\Resource\ResourceAttributeNeedsFormTypeRule
+    - bitExpert\PHPStan\Sylius\Rule\Resource\CreateOperationNeedsFactoryRule
   ```
 - **Services**:
   - `FieldRegistryFactory` → `syliusFieldTypeRegistry` via `createRegistry()`.
@@ -501,10 +538,10 @@ Prefer that over an interface check: interface-based nodes compete with the catc
 - **Configuration**: `phpunit.xml.dist` (suffix `UnitTest.php`, bootstrap `tests/bootstrap.php`).
 - **Rules** use `PHPStan\Testing\RuleTestCase`.
 - **Utility/Registry** use standard `PHPUnit\Framework\TestCase`.
-- 29 tests total. The count is 29 on every lane, but assertions differ by grid-bundle lane: 22 on `^1.15
+- 32 tests total. The count is 32 on every lane, but assertions differ by grid-bundle lane: 25 on `^1.15
   <1.16` (9 skipped — the 8 grid-mutator tests need `GridMutatorInterface` from `>= 1.16`, plus the
-  `Sylius\Component\Grid\GridInterface` case) and 31 on `^1.16` (nothing skipped). A 22/31 split is
-  expected; a 29-vs-something split is not.
+  `Sylius\Component\Grid\GridInterface` case) and 34 on `^1.16` (nothing skipped). A 25/34 split is
+  expected; a 32-vs-something split is not.
 
 #### Gotchas that make tests lie
 
@@ -545,6 +582,7 @@ Prefer that over an interface check: interface-based nodes compete with the catc
 | `PropertyNameUnitTest` | Unit tests for snake → camel conversion | None |
 | `ResourceAttributeNeedsFormTypeUnitTest` | Validates `AsResource` form type existence | `Rule/Resource/data/entity.php`, `entity_non_constant_attribute.php` |
 | `IndexOperationNeedsGridClassUnitTest` | Validates `Index` grid reference | `Rule/Resource/data/entity_index.php` |
+| `CreateOperationNeedsFactoryUnitTest` | Validates `Create` factory class/method (incl. callable form, `createNew` default, non-constant skips) | `Rule/Resource/data/entity_factory.php`, `entity_factory_valid.php`, `entity_factory_skip.php`, `factories.php`, `book.php` |
 | `ResourceAwareGridNeedsResourceClassUnitTest` | Missing resource class (old, attribute, 1.16-native, method-less) | `grid_needs_resource_model.php`, `grid_needs_resource_model_attr.php`, `grid_needs_resource_model_native_interface.php`, `grid_needs_resource_model_no_methods.php` |
 | `ResourceAwareGridNeedsResourceClassValidUnitTest` | Validates correct configurations | `grid_valid.php`, `grid_valid_attr.php` |
 | `GridBuilder\FieldIsPartOfResourceClassUnitTest` | Invalid field detection (incl. `createForService`) | `grid.php` |
@@ -577,11 +615,18 @@ All fixtures (for analysis) reside under `tests/bitExpert/PHPStan/Sylius/Rule/*/
 - `entity.php`: `Entity`, implementing `ResourceInterface`.
 - `entity_index.php`: `EntityIndex`, missing `Index(grid:)`.
 - `entity_non_constant_attribute.php`: `EntityWithNonConstantFormType`, `EntityWithArrayFormType`, `EntityWithIntFormType`, `EntityWithNonConstantGrid`, `EntityWithArrayGrid`, `EntityWithConstantFormType` — non-constant attribute arguments, which the rules must skip silently.
+- `book.php`: `App\Entity\Book`, the resource the fixture factories return. Only needed so the factory fixture classes type-check.
+- `factories.php` (namespace `App\Factory`): `BookFactory` (valid `createNew`/`createForAuthor`), `MethodNotExistsFactory`, `ClassOnlyFactory` (no `createNew`), `CallableFactory` (static `create`), `CallableFactoryNotStatic`, `CallableFactoryWrongMethod`. `FactoryClassNotExists`/`CallableFactoryClassNotExists` are deliberately never defined.
+- `entity_factory.php`: six `AsResource`+`Create` combinations that each trigger one error (missing class, missing method, missing `createNew` default, missing callable class, non-static callable method, missing callable method).
+- `entity_factory_valid.php`: three valid configurations (class+method, class-only with `createNew`, static callable) producing no errors.
+- `entity_factory_skip.php`: `factory: false`, non-constant `factory`/`factoryMethod`, and a standalone `#[Create]` on the class (which *is* validated — the one expected error comes from it).
 
 These files are loaded via `composer.json` `autoload-dev.files` so classes exist during analysis, and
 `Rule/Grid/data/grid.php` + `entity.php` + `grid_custom_filter.php` are excluded from PHPStan analysis
 in `phpstan.dist.neon`. `custom_filter.php` is deliberately **not** excluded: it declares no invalid
 references, so analysing it is what proves the interface implementation still holds on grid-bundle 1.16.
+The new `Rule/Resource/data/` factory fixtures (`book.php`, `factories.php`, `entity_factory*.php`) are
+excluded as well, because they reference the deliberately-missing factory classes.
 
 ---
 
@@ -729,4 +774,4 @@ class constants, a PHP 8.3 feature). Symlink the target PHP into a throwaway bin
 
 ---
 
-*Last updated: 2026-10-30*
+*Last updated: 2026-10-31*

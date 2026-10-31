@@ -53,7 +53,12 @@
       "tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid_mutator_repeatable.php",
       "tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity.php",
       "tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_index.php",
-      "tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_non_constant_attribute.php"
+      "tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_non_constant_attribute.php",
+      "tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/book.php",
+      "tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/factories.php",
+      "tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_factory.php",
+      "tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_factory_valid.php",
+      "tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_factory_skip.php"
     ]
   },
   "extra": {
