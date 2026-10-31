@@ -18,7 +18,7 @@ use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Scalar\String_;
 
-final readonly class TwigFieldNode implements FieldNode
+final readonly class TwigField implements Field
 {
     private const FIELD_TYPE = 'Sylius\\Bundle\\GridBundle\\Builder\\Field\\TwigField';
 

@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace bitExpert\PHPStan\Sylius\Collector\Grid;
 
+use bitExpert\PHPStan\Util\ConstantString;
 use PhpParser\Node;
 use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Name\FullyQualified;
@@ -49,17 +50,15 @@ final class CollectRessourceClassForGridClass implements Collector
         $classType = new ObjectType($classReflection->getName());
 
         // new Grid Bundle logic: check the #AsGrid attribute of the class
-        $attributes = $classReflection->getAttributes();
-        foreach ($attributes as $attribute) {
-            if ('Sylius\Component\Grid\Attribute\AsGrid' === $attribute->getName()) {
-                $argumentTypes = $attribute->getArgumentTypes();
-                foreach ($argumentTypes as $key => $argumentType) {
-                    if ('resourceClass' === $key) {
-                        $resourceClassName = $argumentType->getConstantStrings()[0]->getValue();
+        foreach ($classReflection->getAttributes() as $attribute) {
+            if ('Sylius\Component\Grid\Attribute\AsGrid' !== $attribute->getName()) {
+                continue;
+            }
 
-                        return [$classType->getClassName(), $resourceClassName, $node->getLine()];
-                    }
-                }
+            $argumentTypes = $attribute->getArgumentTypes();
+            $resourceClassName = ConstantString::fromType($argumentTypes['resourceClass'] ?? null);
+            if (null !== $resourceClassName) {
+                return [$classType->getClassName(), $resourceClassName, $node->getLine()];
             }
         }
 

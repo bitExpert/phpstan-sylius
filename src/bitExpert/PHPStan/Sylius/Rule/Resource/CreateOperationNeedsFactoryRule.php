@@ -13,7 +13,6 @@ declare(strict_types=1);
 namespace bitExpert\PHPStan\Sylius\Rule\Resource;
 
 use PhpParser\Node\Attribute;
-use PhpParser\Node\Expr;
 use PhpParser\Node\Scalar\String_;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\IdentifierRuleError;
@@ -21,11 +20,17 @@ use PHPStan\Rules\IdentifierRuleError;
 /**
  * Validates the factory configured on a Create operation.
  *
- * The factory can be given as a class name (optionally with a factoryMethod),
- * as a callable ([Class::class, 'method']) or as false to disable it. When a
- * class name is given without a factoryMethod, the ResourceBundle defaults
- * the method to "createNew" (see FactoryResourceMetadataCollectionFactory), so
- * that method has to exist on the class as well.
+ * The factory argument is validated like every other class-or-callable
+ * reference on an operation (see validateClassOrCallableArgument()), so the
+ * runtime's is_callable() check is honoured: factory: false disables the
+ * factory, and a plain string naming an existing function is invoked
+ * directly instead of being looked up as a class.
+ *
+ * The only factory-specific behaviour is the method resolution: when the
+ * factory is given as a class name, the runtime calls the factoryMethod on
+ * the looked-up service, and without a factoryMethod the ResourceBundle
+ * defaults the method to "createNew" (see
+ * FactoryResourceMetadataCollectionFactory).
  *
  * Only the Create operation is targeted, because factory and factoryMethod
  * are the arguments of the CreateOperation metadata only.
@@ -51,37 +56,6 @@ class CreateOperationNeedsFactoryRule extends AbstractResourceOperationRule
 
         [$factoryArgument, $line] = $factory;
 
-        if ($factoryArgument instanceof Expr\ConstFetch) {
-            // factory: false disables the factory for this operation. null and
-            // true are meaningless but harmless, so they are skipped as well.
-            return [];
-        }
-
-        if ($factoryArgument instanceof Expr\Array_) {
-            // The callable carries its own method name; a factoryMethod
-            // argument is not read by the runtime for callables.
-            $pair = $this->resolveCallablePair($factoryArgument, $scope);
-
-            return null === $pair
-                ? []
-                : $this->validateClassReference($pair[0], $pair[1], true, $line, $scope, 'Factory');
-        }
-
-        $className = null;
-        if ($factoryArgument instanceof Expr\ClassConstFetch) {
-            $className = $this->resolveClassName($factoryArgument, $scope);
-        } elseif ($factoryArgument instanceof String_) {
-            $className = $factoryArgument->value;
-        }
-
-        if (null === $className) {
-            // Anything else (variables, method calls, ...) cannot be resolved
-            // statically and is skipped silently.
-            return [];
-        }
-
-        $factoryMethod = $this->extractNamedArgument($createAttribute, 'factoryMethod');
-
         // Without a factoryMethod the ResourceBundle defaults the method to
         // createNew (FactoryResourceMetadataCollectionFactory::addDefaults()).
         // A factoryMethod that is present but not a constant string cannot be
@@ -89,14 +63,11 @@ class CreateOperationNeedsFactoryRule extends AbstractResourceOperationRule
         // falling back to createNew: at runtime the expression wins, not the
         // default.
         $methodName = 'createNew';
+        $factoryMethod = $this->extractNamedArgument($createAttribute, 'factoryMethod');
         if (null !== $factoryMethod) {
-            if ($factoryMethod[0] instanceof String_) {
-                $methodName = $factoryMethod[0]->value;
-            } else {
-                $methodName = null;
-            }
+            $methodName = $factoryMethod[0] instanceof String_ ? $factoryMethod[0]->value : null;
         }
 
-        return $this->validateClassReference($className, $methodName, false, $line, $scope, 'Factory');
+        return $this->validateClassOrCallableArgument($factoryArgument, $line, $scope, 'Factory', $methodName);
     }
 }

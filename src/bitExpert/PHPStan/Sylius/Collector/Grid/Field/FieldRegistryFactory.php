@@ -27,7 +27,7 @@ class FieldRegistryFactory
 
     public function createRegistry(): FieldRegistry
     {
-        /** @var FieldNode[] $fields */
+        /** @var Field[] $fields */
         $fields = $this->container->getServicesByTag(self::TYPE_DESCRIPTOR_TAG);
 
         return new DefaultFieldRegistry($fields);

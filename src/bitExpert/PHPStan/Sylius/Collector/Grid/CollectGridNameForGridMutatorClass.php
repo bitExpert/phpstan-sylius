@@ -10,9 +10,8 @@
  */
 declare(strict_types=1);
 
-namespace bitExpert\PHPStan\Sylius\Collector\Grid\GridMutator;
+namespace bitExpert\PHPStan\Sylius\Collector\Grid;
 
-use bitExpert\PHPStan\Sylius\Collector\Grid\AbstractGridClassCollector;
 use PhpParser\Node;
 use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
@@ -30,9 +29,9 @@ use PHPStan\Node\InClassNode;
  *
  * @implements Collector<InClassNode, array{string, non-empty-list<string>, int}>
  */
-final class CollectGridNames extends AbstractGridClassCollector implements Collector
+final class CollectGridNameForGridMutatorClass extends AbstractGridAttributeCollector implements Collector
 {
-    private const AS_GRID_MUTATOR_ATTRIBUTE = 'Sylius\Component\Grid\Attribute\AsGridMutator';
+    private const ATTRIBUTE = 'Sylius\Component\Grid\Attribute\AsGridMutator';
 
     /**
      * @return class-string<InClassNode>
@@ -55,23 +54,18 @@ final class CollectGridNames extends AbstractGridClassCollector implements Colle
 
         $gridNames = [];
         $line = $node->getLine();
-        foreach ($classReflection->getAttributes() as $attribute) {
-            if (self::AS_GRID_MUTATOR_ATTRIBUTE !== $attribute->getName()) {
-                continue;
-            }
-
-            $argumentTypes = $attribute->getArgumentTypes();
+        foreach ($this->getAttributeArgumentTypes($classReflection, self::ATTRIBUTE) as $argumentTypes) {
             $gridArgument = $argumentTypes['grid'] ?? ($argumentTypes[0] ?? null);
             if (null === $gridArgument) {
                 continue;
             }
 
-            $constantStrings = $gridArgument->getConstantStrings();
-            if (1 !== \count($constantStrings)) {
+            $gridName = self::resolveConstantString($gridArgument);
+            if (null === $gridName) {
                 continue;
             }
 
-            $gridNames[] = $constantStrings[0]->getValue();
+            $gridNames[] = $gridName;
             $line = $node->getOriginalNode()->getStartLine();
         }
 

@@ -26,7 +26,7 @@ use PHPStan\Type\Type;
  *
  * @implements Collector<StaticCall, array{string, string, int}>
  */
-abstract class AbstractGridBuilderFieldCollector extends AbstractGridBuilderCallCollector implements Collector
+abstract class AbstractGridFieldCollector extends AbstractGridCallCollector implements Collector
 {
     /**
      * Grid fields are built through a static factory. Every field class uses create(),

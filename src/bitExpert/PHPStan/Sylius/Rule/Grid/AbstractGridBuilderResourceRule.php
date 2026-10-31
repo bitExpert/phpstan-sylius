@@ -13,8 +13,8 @@ declare(strict_types=1);
 namespace bitExpert\PHPStan\Sylius\Rule\Grid;
 
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectGridNameForGridClass;
+use bitExpert\PHPStan\Sylius\Collector\Grid\CollectGridNameForGridMutatorClass;
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectRessourceClassForGridClass;
-use bitExpert\PHPStan\Sylius\Collector\Grid\GridMutator\CollectGridNames;
 use PhpParser\Node;
 use PHPStan\Analyser\Scope;
 use PHPStan\Collectors\Collector;
@@ -62,52 +62,65 @@ abstract readonly class AbstractGridBuilderResourceRule implements Rule
     {
         $ownerResourceMap = $this->resolveResourceMap($node);
 
-        /** @var array<string, list<array{0: string|string[], 1: int}>> $ownerItemsMap */
-        $ownerItemsMap = [];
-        /** @var array<string, string> $ownerFilesMap */
-        $ownerFilesMap = [];
+        /** @var list<array{0: string, 1: string|string[], 2: int, 3: string}> $items */
+        $items = $this->collectOwnerItems($node);
 
-        $items = $node->get($this->itemsCollector);
-        /** @var array<string, list<array{0: string, 1: string|string[], 2: int}>> $items */
-        foreach ($items as $file => $mapping) {
+        /** @var list<IdentifierRuleError> $errors */
+        $errors = [];
+        foreach ($items as [$ownerClassName, $item, $lineNo, $file]) {
+            $resourceClassNames = $ownerResourceMap[$ownerClassName] ?? null;
+            if (null === $resourceClassNames) {
+                continue;
+            }
+
+            $resourceClassNames = \is_array($resourceClassNames) ? $resourceClassNames : [$resourceClassNames];
+            foreach ($resourceClassNames as $resourceClassName) {
+                foreach ($this->validateItem(
+                    $ownerClassName,
+                    $resourceClassName,
+                    $item,
+                    $lineNo,
+                    $file,
+                    $scope,
+                ) as $error) {
+                    $errors[] = $error;
+                }
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Flattens the collected field/filter tuples into a plain list of
+     * [owner class, item, line, file] records, dropping incomplete entries.
+     *
+     * The file each error is reported on is the file the tuple was collected
+     * in, which is the only file identity PHP-Parser 5 exposes: a grid split
+     * across multiple files reports every field error against whichever file
+     * was seen last.
+     *
+     * @return list<array{0: string, 1: string|string[], 2: int, 3: string}>
+     */
+    private function collectOwnerItems(CollectedDataNode $node): array
+    {
+        $items = [];
+
+        /** @var array<string, list<array{0: string, 1: string|string[], 2: int}>> $collected */
+        $collected = $node->get($this->itemsCollector);
+        foreach ($collected as $file => $mapping) {
             foreach ($mapping as $mappingConfig) {
                 $ownerClassName = $mappingConfig[0] ?? null;
                 $item = $mappingConfig[1] ?? null;
                 $lineNo = $mappingConfig[2] ?? null;
 
                 if (null !== $ownerClassName && null !== $item && null !== $lineNo) {
-                    $ownerItemsMap[$ownerClassName][] = [$item, $lineNo];
-                    $ownerFilesMap[$ownerClassName] = $file;
+                    $items[] = [$ownerClassName, $item, $lineNo, $file];
                 }
             }
         }
 
-        /** @var list<IdentifierRuleError> $errors */
-        $errors = [];
-        /** @var array<string, string|list<string>> $ownerResourceMap */
-        foreach ($ownerResourceMap as $ownerClassName => $resourceClassNames) {
-            if (!isset($ownerItemsMap[$ownerClassName])) {
-                continue;
-            }
-
-            $resourceClassNames = \is_array($resourceClassNames) ? $resourceClassNames : [$resourceClassNames];
-            foreach ($ownerItemsMap[$ownerClassName] as $item) {
-                foreach ($resourceClassNames as $resourceClassName) {
-                    foreach ($this->validateItem(
-                        $ownerClassName,
-                        $resourceClassName,
-                        $item[0],
-                        $item[1],
-                        $ownerFilesMap[$ownerClassName],
-                        $scope,
-                    ) as $error) {
-                        $errors[] = $error;
-                    }
-                }
-            }
-        }
-
-        return $errors;
+        return $items;
     }
 
     /**
@@ -184,7 +197,7 @@ abstract readonly class AbstractGridBuilderResourceRule implements Rule
         }
 
         $mutatorResourceMap = [];
-        $mutators = $node->get(CollectGridNames::class);
+        $mutators = $node->get(CollectGridNameForGridMutatorClass::class);
         /** @var array<string, list<array{string, non-empty-list<string>, int}>> $mutators */
         foreach ($mutators as $mapping) {
             foreach ($mapping as $mappingConfig) {
@@ -256,7 +269,7 @@ abstract readonly class AbstractGridBuilderResourceRule implements Rule
             // single property check
             $getterMethod = 'get' . \ucfirst($fieldName);
             if (!$resourceClass->hasProperty($fieldName) && !$resourceClass->hasMethod($getterMethod)) {
-                $errors[] = RuleErrorBuilder::message($this->missingPropertyMessage($ownerClassName, $fieldName, $resourceClassName))
+                $errors[] = RuleErrorBuilder::message($this->missingPropertyMessage($fieldName, $resourceClassName))
                     ->identifier($missingPropertyIdentifier)
                     ->file($file)
                     ->line($lineNo)
@@ -273,7 +286,7 @@ abstract readonly class AbstractGridBuilderResourceRule implements Rule
             $getterMethod = 'get' . \ucfirst($segment);
 
             if (!$resourceClass->hasProperty($segment) && !$resourceClass->hasMethod($getterMethod)) {
-                $errors[] = RuleErrorBuilder::message($this->missingPropertyMessage($ownerClassName, $segment, $resourceClass->getName()))
+                $errors[] = RuleErrorBuilder::message($this->missingPropertyMessage($segment, $resourceClass->getName()))
                     ->identifier($missingPropertyIdentifier)
                     ->file($file)
                     ->line($lineNo)
@@ -336,7 +349,7 @@ abstract readonly class AbstractGridBuilderResourceRule implements Rule
 
             $getterMethod = 'get' . \ucfirst($fieldName);
             if (!$resourceClass->hasProperty($fieldName) && !$resourceClass->hasMethod($getterMethod)) {
-                $errors[] = RuleErrorBuilder::message($this->missingFilterMessage($ownerClassName, $fieldName, $resourceClassName))
+                $errors[] = RuleErrorBuilder::message($this->missingFilterMessage($fieldName, $resourceClassName))
                     ->identifier($missingFilterIdentifier)
                     ->file($file)
                     ->line($lineNo)
@@ -350,7 +363,7 @@ abstract readonly class AbstractGridBuilderResourceRule implements Rule
     /**
      * Message reported when a field/property is missing on the resource class.
      */
-    protected function missingPropertyMessage(string $ownerClassName, string $fieldName, string $resourceClassName): string
+    protected function missingPropertyMessage(string $fieldName, string $resourceClassName): string
     {
         return \sprintf(
             'The field "%s" needs to exists as property in class "%s".',
@@ -362,7 +375,7 @@ abstract readonly class AbstractGridBuilderResourceRule implements Rule
     /**
      * Message reported when a filter field is missing on the resource class.
      */
-    protected function missingFilterMessage(string $ownerClassName, string $fieldName, string $resourceClassName): string
+    protected function missingFilterMessage(string $fieldName, string $resourceClassName): string
     {
         return \sprintf(
             'The filter field "%s" needs to exists as property in resource class "%s".',

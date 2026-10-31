@@ -5,51 +5,9 @@ parameters:
         - src
         - tests
     excludePaths:
-        - tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/entity.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid_recursive.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/grid_custom_filter.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Grid//data/grid_needs_resource_model.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Grid//data/grid_needs_resource_model_attr.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Grid//data/grid_needs_resource_model_no_methods.php
-        # Only parses on grid-bundle >= 1.16, so it must not be statically analysed
-        # against the >= 1.15 lane.
-        - tests/bitExpert/PHPStan/Sylius/Rule/Grid//data/grid_needs_resource_model_native_interface.php
-        # Grid mutators only exist on grid-bundle >= 1.16, so they must not be
-        # statically analysed against the >= 1.15 lane.
-        - tests/bitExpert/PHPStan/Sylius/Rule/Grid//data/grid_mutator.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Grid//data/grid_mutator_valid.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Grid//data/grid_mutator_names.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Grid//data/grid_mutator_repeatable.php
-        # Attribute-only grids reference GridMutatorInterface-fixtures only
-        # present on grid-bundle >= 1.16.
-        - tests/bitExpert/PHPStan/Sylius/Rule/Grid//data/grid_named_attr.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Grid//data/grid_named_custom.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Grid//data/grid_named_medipack.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_index.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_non_constant_attribute.php
-        # The factory fixtures reference classes that do not exist
-        # (FactoryClassNotExists, CallableFactory etc.), which would make
-        # the self-analysis fail.
-        - tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/book.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/factories.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_factory.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_factory_valid.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_factory_skip.php
-        # The provider fixtures reference classes that do not exist
-        # (ProviderClassNotExists etc.), which would make the self-analysis
-        # fail.
-        - tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/providers.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_provider.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_provider_valid.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_provider_skip.php
-        # The processor fixtures reference classes that do not exist
-        # (ProcessorClassNotExists etc.), which would make the self-analysis
-        # fail.
-        - tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/processors.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_processor.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_processor_valid.php
-        - tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_processor_skip.php
+        # Grid test fixtures - reference non-existent classes or grid-bundle 1.16+ only
+        - tests/bitExpert/PHPStan/Sylius/Rule/Grid/data/*
+        # Resource test fixtures - reference non-existent classes (FactoryClassNotExists, etc.)
+        - tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/*
     fileExtensions:
         - php

@@ -18,9 +18,9 @@ use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Scalar\String_;
 
-final readonly class EnumFieldNode implements FieldNode
+final readonly class StringField implements Field
 {
-    private const FIELD_TYPE = 'Sylius\\Bundle\\GridBundle\\Builder\\Field\\EnumField';
+    private const FIELD_TYPE = 'Sylius\\Bundle\\GridBundle\\Builder\\Field\\StringField';
 
     public function supports(FullyQualified $nodeClass): bool
     {

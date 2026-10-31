@@ -20,7 +20,7 @@ services:
 		tags:
 			- phpstan.collector
 	-
-		class: bitExpert\PHPStan\Sylius\Collector\Grid\GridMutator\CollectGridNames
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\CollectGridNameForGridMutatorClass
 		tags:
 			- phpstan.collector
 	-
@@ -41,27 +41,27 @@ services:
 		tags:
 			- phpstan.collector
 	-
-		class: bitExpert\PHPStan\Sylius\Collector\Grid\Field\StringFieldNode
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Field\StringField
 		tags:
 			- phpstan.sylius.grid.field
 	-
-		class: bitExpert\PHPStan\Sylius\Collector\Grid\Field\DateTimeFieldNode
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Field\DateTimeField
 		tags:
 			- phpstan.sylius.grid.field
 	-
-		class: bitExpert\PHPStan\Sylius\Collector\Grid\Field\TwigFieldNode
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Field\TwigField
 		tags:
 			- phpstan.sylius.grid.field
 	-
-		class: bitExpert\PHPStan\Sylius\Collector\Grid\Field\EnumFieldNode
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Field\EnumField
 		tags:
 			- phpstan.sylius.grid.field
 	-
-		class: bitExpert\PHPStan\Sylius\Collector\Grid\Field\CallableFieldNode
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Field\CallableField
 		tags:
 			- phpstan.sylius.grid.field
 	-
-		class: bitExpert\PHPStan\Sylius\Collector\Grid\Field\GenericFieldNode
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\Field\GenericField
 		tags:
 			- phpstan.sylius.grid.field
 	-

@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace bitExpert\PHPStan\Sylius\Rule\Grid\GridMutator;
 
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectGridNameForGridClass;
+use bitExpert\PHPStan\Sylius\Collector\Grid\CollectGridNameForGridMutatorClass;
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectRessourceClassForGridClass;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\DefaultFilterRegistry;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\EntityFilter;
@@ -22,7 +23,6 @@ use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\Filter;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\SelectFilter;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\StringFilter;
 use bitExpert\PHPStan\Sylius\Collector\Grid\GridMutator\CollectFilter;
-use bitExpert\PHPStan\Sylius\Collector\Grid\GridMutator\CollectGridNames;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
@@ -50,7 +50,7 @@ class FilterIsPartOfResourceClassValidUnitTest extends RuleTestCase
         return [
             new CollectRessourceClassForGridClass(),
             new CollectGridNameForGridClass(),
-            new CollectGridNames(),
+            new CollectGridNameForGridMutatorClass(),
             new CollectFilter(new DefaultFilterRegistry($filters)),
         ];
     }

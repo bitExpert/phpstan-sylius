@@ -12,10 +12,10 @@ declare(strict_types=1);
 
 namespace bitExpert\PHPStan\Sylius\Collector\Grid\GridBuilder;
 
-use bitExpert\PHPStan\Sylius\Collector\Grid\AbstractGridBuilderFieldCollector;
+use bitExpert\PHPStan\Sylius\Collector\Grid\AbstractGridFieldCollector;
 use PHPStan\Analyser\Scope;
 
-final class CollectFields extends AbstractGridBuilderFieldCollector
+final class CollectFields extends AbstractGridFieldCollector
 {
     protected function scopeIsBuilderScope(Scope $scope): bool
     {
