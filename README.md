@@ -45,6 +45,7 @@ The following rules have been implemented:
 - Rule to check that grid class configured via the `Index` attribute exists
 - Rule to check that form type configured via the `AsResource` attribute exists
 - Rule to check that the provider configured on an operation exists: a class-string provider has to reference an existing class, a callable `[Class::class, 'method']` provider needs an existing and static method
+- Rule to check that the processor configured on an operation exists: a class-string processor has to reference an existing class, a callable `[Class::class, 'method']` processor needs an existing and static method
 
 ### Custom filter types
 

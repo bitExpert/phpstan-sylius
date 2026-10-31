@@ -8,6 +8,7 @@ rules:
 	- bitExpert\PHPStan\Sylius\Rule\Resource\ResourceAttributeNeedsFormTypeRule
 	- bitExpert\PHPStan\Sylius\Rule\Resource\CreateOperationNeedsFactoryRule
 	- bitExpert\PHPStan\Sylius\Rule\Resource\OperationNeedsValidProviderRule
+	- bitExpert\PHPStan\Sylius\Rule\Resource\OperationNeedsValidProcessorRule
 
 services:
 	-
