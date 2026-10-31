@@ -195,10 +195,21 @@ abstract class AbstractResourceOperationRule extends AbstractResourceRule
      * to be static, because the runtime invokes the callable statically and
      * is_callable() is false for instance methods.
      *
+     * The optional method name is only checked for the class name form: it
+     * is the method the runtime calls on the looked-up service, as the
+     * factory rule passes its factoryMethod (an instance method, matching
+     * $factoryInstance->$factoryMethod(...)). A callable carries its own
+     * method name, so it is ignored for callables.
+     *
      * @return list<IdentifierRuleError>
      */
-    protected function validateClassOrCallableArgument(Expr $argument, int $line, Scope $scope, string $noun): array
-    {
+    protected function validateClassOrCallableArgument(
+        Expr $argument,
+        int $line,
+        Scope $scope,
+        string $noun,
+        ?string $methodName = null,
+    ): array {
         if ($argument instanceof Expr\ConstFetch) {
             // null and false are not references, and neither is any other
             // constant expression: they are skipped as silently as the
@@ -235,7 +246,7 @@ abstract class AbstractResourceOperationRule extends AbstractResourceRule
             return [];
         }
 
-        return $this->validateClassReference($className, null, false, $line, $scope, $noun);
+        return $this->validateClassReference($className, $methodName, false, $line, $scope, $noun);
     }
 
     /**

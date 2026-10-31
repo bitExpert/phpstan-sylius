@@ -68,3 +68,24 @@ class EntityValidCallableFactory implements ResourceInterface
         return 1;
     }
 }
+
+/**
+ * A plain string factory naming an existing function is a valid callable for
+ * the runtime: is_callable() is checked before the factory locator lookup,
+ * exactly as for providers and processors.
+ */
+#[AsResource(
+    operations: [
+        new Create(
+            path: 'books',
+            factory: 'App\Factory\factory_function',
+        ),
+    ],
+)]
+class EntityValidFunctionFactory implements ResourceInterface
+{
+    public function getId(): int
+    {
+        return 1;
+    }
+}

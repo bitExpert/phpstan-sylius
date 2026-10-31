@@ -293,12 +293,19 @@ them separately:
     must exist **and be static**, because the runtime invokes the callable statically
     (`is_callable(['NonStaticClass', 'method'])` is false for instance methods).
   - `factory: false` disables the factory → skipped. `factory: null`/`true` → skipped.
+  - `factory: 'App\Factory\factory_function'` where `factory_function` is an existing plain
+    function → valid, skipped: the runtime checks `is_callable()` before the factory locator
+    lookup (`State\Factory::create()`), exactly as for providers and processors.
   - Non-constant arguments (variables, `new stdClass()`, method calls) are skipped silently; the
     analysis is never aborted for them.
   - Positional arguments are not mapped: the `Create` constructor declares more than twenty
     parameters before `factory`, so only named arguments are read.
   - A `factoryMethod` that is present but not a constant string skips the method check entirely
     (the runtime would call the expression's value, not the `createNew` default).
+- **Implementation**: `validateAttribute()` only resolves the method name — the `createNew`
+  default plus the `factoryMethod` override — and delegates the whole class-or-callable dispatch
+  to `AbstractResourceOperationRule::validateClassOrCallableArgument()` with that method name,
+  so the factory rule shares every skip rule of the provider/processor rules.
 - **Errors**:
   - `sylius.resource.factoryClassNotFound` → `Factory class "%s" not found!`
   - `sylius.resource.factoryMethodNotFound` → `Factory method "%s" not found on factory class "%s"!`
@@ -359,6 +366,10 @@ them separately:
   - the class-or-callable validation: class must exist; callable `[Class::class, 'method']` needs an
     existing **static** method; a string naming an existing plain function is a valid callable and is
     skipped; `null`/`false`/non-constant arguments are skipped silently,
+    `validateClassOrCallableArgument(Expr, int, Scope, string $noun, ?string $methodName = null)`
+    also accepts the method the runtime calls on the looked-up service (the factory rule passes its
+    resolved `factoryMethod`) — it is checked for the class-name form only, because a callable
+    carries its own method name,
   - `resolveClassNameFromExpression(Expr, Scope): ?string` — the shared dispatch for a
     `Class::class` constant (self::/static::/parent:: included) or a plain string; anything else
     yields null. Used by `validateClassOrCallableArgument()` and the factory rule alike.
@@ -434,6 +445,62 @@ them separately:
   - `sylius.resource.processorClassNotFound` → `Processor class "%s" not found!`
   - `sylius.resource.processorMethodNotFound` → `Processor method "%s" not found on processor class "%s"!`
   - `sylius.resource.processorMethodNotStatic` → `Processor method "%s" on processor class "%s" has to be static when the processor is passed as callable!`
+
+---
+
+## Error Identifier Catalogue
+
+Every error the extension reports carries a stable identifier, so users can ignore or baseline
+individual rules. The identifiers follow the scheme `sylius.<area>.<subject><Problem>`, where
+`<area>` is the metadata being validated — **not** the kind of class referenced:
+
+- `sylius.grid.*` is emitted by the rules that validate **grid definitions** (grids, mutators).
+- `sylius.resource.*` is emitted by the rules that validate **resource metadata** (attributes on
+  a `ResourceInterface` implementor).
+
+`sylius.resource.gridClassNotFound` therefore lives in the resource namespace on purpose: it is
+emitted by a resource-metadata rule (the `Index` attribute), even though the referenced class is a
+grid. The prefix names the rule family, never the referenced subject — moving it to `sylius.grid.*`
+would group it by reference instead of by emitter and break every user baseline.
+
+The identifiers are public API (users put them in `ignore` lists and baselines): **never rename
+one**, not even to fix a typo or to re-group a prefix.
+
+### `sylius.grid.*` — grid definition rules
+
+| Identifier | Message | Emitted by |
+|------------|---------|-------------|
+| `sylius.grid.resourceClassRequired` | `Resource class "%s" not found!` | `ResourceAwareGridNeedsResourceClass` |
+| `sylius.grid.resourceClassMissingProperty` | `The field "%s" needs to exists as property in class "%s".` | `GridBuilder\FieldIsPartOfResourceClass` |
+| `sylius.grid.resourceClassPropertyMissingType` | `Unable to identify the type of the field "%s" in class "%s".` | `GridBuilder\FieldIsPartOfResourceClass` (recursive paths) |
+| `sylius.grid.resourceClassMissingFilter` | `The filter field "%s" needs to exists as property in resource class "%s".` | `GridBuilder\FilterIsPartOfResourceClass` |
+| `sylius.grid.mutatorResourceClassMissingProperty` | `The field "%s" needs to exists as property in class "%s".` | `GridMutator\FieldIsPartOfResourceClass` |
+| `sylius.grid.mutatorResourceClassPropertyMissingType` | `Unable to identify the type of the field "%s" in class "%s".` | `GridMutator\FieldIsPartOfResourceClass` (recursive paths) |
+| `sylius.grid.mutatorResourceClassMissingFilter` | `The filter field "%s" needs to exists as property in resource class "%s".` | `GridMutator\FilterIsPartOfResourceClass` |
+
+### `sylius.resource.*` — resource metadata rules
+
+| Identifier | Message | Emitted by |
+|------------|---------|-------------|
+| `sylius.resource.gridClassNotFound` | `Grid class "%s" not found!` | `IndexOperationNeedsGridClassRule` |
+| `sylius.resource.formTypeNotFound` | `Form Type "%s" not found!` | `ResourceAttributeNeedsFormTypeRule` |
+| `sylius.resource.factoryClassNotFound` | `Factory class "%s" not found!` | `CreateOperationNeedsFactoryRule` |
+| `sylius.resource.factoryMethodNotFound` | `Factory method "%s" not found on factory class "%s"!` | `CreateOperationNeedsFactoryRule` |
+| `sylius.resource.factoryMethodNotStatic` | `Factory method "%s" on factory class "%s" has to be static when the factory is passed as callable!` | `CreateOperationNeedsFactoryRule` |
+| `sylius.resource.providerClassNotFound` | `Provider class "%s" not found!` | `OperationNeedsValidProviderRule` |
+| `sylius.resource.providerMethodNotFound` | `Provider method "%s" not found on provider class "%s"!` | `OperationNeedsValidProviderRule` |
+| `sylius.resource.providerMethodNotStatic` | `Provider method "%s" on provider class "%s" has to be static when the provider is passed as callable!` | `OperationNeedsValidProviderRule` |
+| `sylius.resource.processorClassNotFound` | `Processor class "%s" not found!` | `OperationNeedsValidProcessorRule` |
+| `sylius.resource.processorMethodNotFound` | `Processor method "%s" not found on processor class "%s"!` | `OperationNeedsValidProcessorRule` |
+| `sylius.resource.processorMethodNotStatic` | `Processor method "%s" on processor class "%s" has to be static when the processor is passed as callable!` | `OperationNeedsValidProcessorRule` |
+
+### Noun-generated identifiers
+
+The provider, processor and factory identifiers are not hand-picked per rule:
+`AbstractResourceOperationRule::validateClassReference()` derives them from a noun
+(`Provider`, `Processor`, `Factory`) via `sprintf('sylius.resource.%s<Problem>', lcfirst($noun))`.
+A new operation rule gets its own identifiers for free by passing its own noun — keep the noun
+a single UpperCamelCase word so the derived identifier stays inside the scheme.
 
 ---
 
@@ -790,7 +857,7 @@ Prefer that over an interface check: interface-based nodes compete with the catc
 | `PropertyNameUnitTest` | Unit tests for snake → camel conversion | None |
 | `ResourceAttributeNeedsFormTypeUnitTest` | Validates `AsResource` form type existence | `Rule/Resource/data/entity.php`, `entity_non_constant_attribute.php` |
 | `IndexOperationNeedsGridClassUnitTest` | Validates `Index` grid reference | `Rule/Resource/data/entity_index.php` |
-| `CreateOperationNeedsFactoryUnitTest` | Validates `Create` factory class/method (incl. callable form, `createNew` default, non-constant skips) | `Rule/Resource/data/entity_factory.php`, `entity_factory_valid.php`, `entity_factory_skip.php`, `factories.php`, `book.php` |
+| `CreateOperationNeedsFactoryUnitTest` | Validates `Create` factory class/method (incl. callable form, `createNew` default, function string, non-constant skips) | `Rule/Resource/data/entity_factory.php`, `entity_factory_valid.php`, `entity_factory_skip.php`, `factories.php`, `book.php` |
 | `OperationNeedsValidProviderUnitTest` | Validates operation provider class/method (incl. callable form, function-string form, non-resource/non-constant skips) | `Rule/Resource/data/entity_provider.php`, `entity_provider_valid.php`, `entity_provider_skip.php`, `providers.php` |
 | `OperationNeedsValidProcessorUnitTest` | Validates operation processor class/method (incl. callable form, function-string form, non-resource/non-constant skips) | `Rule/Resource/data/entity_processor.php`, `entity_processor_valid.php`, `entity_processor_skip.php`, `processors.php` |
 | `ResourceAwareGridNeedsResourceClassUnitTest` | Missing resource class (old, attribute, 1.16-native, method-less) | `grid_needs_resource_model.php`, `grid_needs_resource_model_attr.php`, `grid_needs_resource_model_native_interface.php`, `grid_needs_resource_model_no_methods.php` |
@@ -826,9 +893,9 @@ All fixtures (for analysis) reside under `tests/bitExpert/PHPStan/Sylius/Rule/*/
 - `entity_index.php`: `EntityIndex`, missing `Index(grid:)`.
 - `entity_non_constant_attribute.php`: `EntityWithNonConstantFormType`, `EntityWithArrayFormType`, `EntityWithIntFormType`, `EntityWithNonConstantGrid`, `EntityWithArrayGrid`, `EntityWithConstantFormType` — non-constant attribute arguments, which the rules must skip silently.
 - `book.php`: `App\Entity\Book`, the resource the fixture factories return. Only needed so the factory fixture classes type-check.
-- `factories.php` (namespace `App\Factory`): `BookFactory` (valid `createNew`/`createForAuthor`), `MethodNotExistsFactory`, `ClassOnlyFactory` (no `createNew`), `CallableFactory` (static `create`), `CallableFactoryNotStatic`, `CallableFactoryWrongMethod`. `FactoryClassNotExists`/`CallableFactoryClassNotExists` are deliberately never defined.
+- `factories.php` (namespace `App\Factory`): `BookFactory` (valid `createNew`/`createForAuthor`), `MethodNotExistsFactory`, `ClassOnlyFactory` (no `createNew`), `CallableFactory` (static `create`), `CallableFactoryNotStatic`, `CallableFactoryWrongMethod`, plus a plain `factory_function()`. `FactoryClassNotExists`/`CallableFactoryClassNotExists` are deliberately never defined.
 - `entity_factory.php`: six `AsResource`+`Create` combinations that each trigger one error (missing class, missing method, missing `createNew` default, missing callable class, non-static callable method, missing callable method).
-- `entity_factory_valid.php`: three valid configurations (class+method, class-only with `createNew`, static callable) producing no errors.
+- `entity_factory_valid.php`: four valid configurations (class+method, class-only with `createNew`, static callable, existing function string) producing no errors.
 - `entity_factory_skip.php`: `factory: false`, non-constant `factory`/`factoryMethod`, and a standalone `#[Create]` on the class (which *is* validated — the one expected error comes from it).
 - `providers.php` (namespace `App\Provider`): `BookProvider` (implements `ProviderInterface`), `MethodNotExistsProvider`, `NotStaticProvider` (instance `provide`), `CallableProvider` (static `provide`), `CallableProviderWrongMethod`, plus a plain `provider_function()`. `ProviderClassNotExists` is deliberately never defined.
 - `processors.php` (namespace `App\Processor`): `BookProcessor` (implements `ProcessorInterface`), `NotStaticProcessor` (instance `process`), `CallableProcessor` (static `process`), `CallableProcessorWrongMethod`, plus a plain `processor_function()`. `ProcessorClassNotExists` is deliberately never defined.

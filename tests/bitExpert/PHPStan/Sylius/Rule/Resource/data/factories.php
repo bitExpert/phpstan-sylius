@@ -60,3 +60,8 @@ final class CallableFactoryWrongMethod
         return new Book();
     }
 }
+
+function factory_function(): Book
+{
+    return new Book();
+}
