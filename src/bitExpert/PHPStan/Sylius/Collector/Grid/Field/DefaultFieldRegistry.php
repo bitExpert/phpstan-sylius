@@ -14,12 +14,12 @@ namespace bitExpert\PHPStan\Sylius\Collector\Grid\Field;
 
 final readonly class DefaultFieldRegistry implements FieldRegistry
 {
-    /** @param FieldNode[] $fields */
+    /** @param Field[] $fields */
     public function __construct(private readonly array $fields)
     {
     }
 
-    /** @return FieldNode[] */
+    /** @return Field[] */
     public function getFields(): array
     {
         return $this->fields;

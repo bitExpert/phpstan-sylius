@@ -15,7 +15,7 @@ namespace bitExpert\PHPStan\Sylius\Collector\Grid\Field;
 use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Name\FullyQualified;
 
-interface FieldNode
+interface Field
 {
     /** Returns true if this node handles the concrete Sylius field class. */
     public function supports(FullyQualified $nodeClass): bool;

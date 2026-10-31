@@ -13,13 +13,13 @@ declare(strict_types=1);
 namespace bitExpert\PHPStan\Sylius\Rule\Grid\GridBuilder;
 
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectRessourceClassForGridClass;
-use bitExpert\PHPStan\Sylius\Collector\Grid\Field\CallableFieldNode;
-use bitExpert\PHPStan\Sylius\Collector\Grid\Field\DateTimeFieldNode;
+use bitExpert\PHPStan\Sylius\Collector\Grid\Field\CallableField;
+use bitExpert\PHPStan\Sylius\Collector\Grid\Field\DateTimeField;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Field\DefaultFieldRegistry;
-use bitExpert\PHPStan\Sylius\Collector\Grid\Field\EnumFieldNode;
-use bitExpert\PHPStan\Sylius\Collector\Grid\Field\GenericFieldNode;
-use bitExpert\PHPStan\Sylius\Collector\Grid\Field\StringFieldNode;
-use bitExpert\PHPStan\Sylius\Collector\Grid\Field\TwigFieldNode;
+use bitExpert\PHPStan\Sylius\Collector\Grid\Field\EnumField;
+use bitExpert\PHPStan\Sylius\Collector\Grid\Field\GenericField;
+use bitExpert\PHPStan\Sylius\Collector\Grid\Field\StringField;
+use bitExpert\PHPStan\Sylius\Collector\Grid\Field\TwigField;
 use bitExpert\PHPStan\Sylius\Collector\Grid\GridBuilder\CollectFields;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
@@ -38,12 +38,12 @@ class FieldIsPartOfResourceClassValidUnitTest extends RuleTestCase
     protected function getCollectors(): array
     {
         $fields = [];
-        $fields[] = new StringFieldNode();
-        $fields[] = new DateTimeFieldNode();
-        $fields[] = new TwigFieldNode();
-        $fields[] = new EnumFieldNode();
-        $fields[] = new CallableFieldNode();
-        $fields[] = new GenericFieldNode();
+        $fields[] = new StringField();
+        $fields[] = new DateTimeField();
+        $fields[] = new TwigField();
+        $fields[] = new EnumField();
+        $fields[] = new CallableField();
+        $fields[] = new GenericField();
 
         return [
             new CollectRessourceClassForGridClass(),

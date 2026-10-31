@@ -18,9 +18,9 @@ use PhpParser\Node\Expr\StaticCall;
 use PhpParser\Node\Name\FullyQualified;
 use PhpParser\Node\Scalar\String_;
 
-final readonly class GenericFieldNode implements FieldNode
+final readonly class DateTimeField implements Field
 {
-    private const FIELD_TYPE = 'Sylius\\Bundle\\GridBundle\\Builder\\Field\\Field';
+    private const FIELD_TYPE = 'Sylius\\Bundle\\GridBundle\\Builder\\Field\\DateTimeField';
 
     public function supports(FullyQualified $nodeClass): bool
     {

@@ -14,6 +14,6 @@ namespace bitExpert\PHPStan\Sylius\Collector\Grid\Field;
 
 interface FieldRegistry
 {
-    /** @return FieldNode[] */
+    /** @return Field[] */
     public function getFields(): array;
 }

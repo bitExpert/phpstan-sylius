@@ -49,11 +49,11 @@ src/
    │  │     └─ CollectGridNames.php                  # Collector: mutator class → grid names (#[AsGridMutator], repeatable)
    │  │
    │  ├─ Collector/Grid/Field/
-   │  │  ├─ FieldNode.php                            # Interface for field type descriptors
+   │  │  ├─ Field.php                                # Interface for field type descriptors
    │  │  ├─ FieldRegistry.php                        # Interface
    │  │  ├─ FieldRegistryFactory.php                 # DI factory for field registry
    │  │  ├─ DefaultFieldRegistry.php                 # Concrete registry
-   │  │  └─ *FieldNode.php                           # StringFieldNode, DateTimeFieldNode, TwigFieldNode, EnumFieldNode, CallableFieldNode, GenericFieldNode
+   │  │  └─ *Field.php                               # StringField, DateTimeField, TwigField, EnumField, CallableField, GenericField
    │  │
    │  ├─ Collector/Grid/Filter/
    │  │  ├─ FilterNode.php                           # Interface for filter type descriptors
@@ -86,7 +86,7 @@ src/
 
 **Note**: `CollectRessourceClassForGridClass.php` contains a typo: `Ressource` (double `s`), which is preserved for historical compatibility.
 
-**Note**: field nodes carry a `Node` suffix in their class name; filter nodes do **not**. `Field/StringFieldNode.php` vs `Filter/StringFilter.php`.
+**Note**: field and filter classes follow the same naming convention — no suffix. `Field/StringField.php` matches `Filter/StringFilter.php`.
 
 ---
 
@@ -460,29 +460,29 @@ them separately:
 ### Field Registry System
 
 - **Factory**: `FieldRegistryFactory::createRegistry()` uses PHPStan Container to collect all services tagged `phpstan.sylius.grid.field`.
-- **Implementation**: `DefaultFieldRegistry` stores an immutable array of `FieldNode[]`.
+- **Implementation**: `DefaultFieldRegistry` stores an immutable array of `Field[]`.
 
-### Field Nodes
+### Field Types
 
-All field nodes implement `FieldNode`:
+All field types implement `Field`:
 
 ```php
-interface FieldNode {
+interface Field {
     public function supports(FullyQualified $nodeClass): bool;
     public function getFieldNames(StaticCall $node): array; // snake_case → camelCase
 }
 ```
 
-#### Built-in Field Nodes
+#### Built-in Field Types
 
 | Class | Sylius Class Name | Argument(s) Processed | Conversion |
 |-------|-------------------|-----------------------|------------|
-| `StringFieldNode` | `Sylius\Bundle\GridBundle\Builder\Field\StringField` | args[0] string | snake → camel |
-| `DateTimeFieldNode` | `Sylius\Bundle\GridBundle\Builder\Field\DateTimeField` | args[0] string | snake → camel |
-| `TwigFieldNode` | `Sylius\Bundle\GridBundle\Builder\Field\TwigField` | args[0] string | snake → camel |
-| `EnumFieldNode` | `Sylius\Bundle\GridBundle\Builder\Field\EnumField` | args[0] string | snake → camel |
-| `CallableFieldNode` | `Sylius\Bundle\GridBundle\Builder\Field\CallableField` | args[0] string | snake → camel |
-| `GenericFieldNode` | `Sylius\Bundle\GridBundle\Builder\Field\Field` | args[0] string | snake → camel |
+| `StringField` | `Sylius\Bundle\GridBundle\Builder\Field\StringField` | args[0] string | snake → camel |
+| `DateTimeField` | `Sylius\Bundle\GridBundle\Builder\Field\DateTimeField` | args[0] string | snake → camel |
+| `TwigField` | `Sylius\Bundle\GridBundle\Builder\Field\TwigField` | args[0] string | snake → camel |
+| `EnumField` | `Sylius\Bundle\GridBundle\Builder\Field\EnumField` | args[0] string | snake → camel |
+| `CallableField` | `Sylius\Bundle\GridBundle\Builder\Field\CallableField` | args[0] string | snake → camel |
+| `GenericField` | `Sylius\Bundle\GridBundle\Builder\Field\Field` | args[0] string | snake → camel |
 
 #### Important Notes
 
@@ -606,14 +606,14 @@ Consequences:
 
 To add custom types:
 
-1. Implement `FieldNode` or `FilterNode`.
+1. Implement `Field` or `FilterNode`.
 2. Register service in `phpstan.neon` with the appropriate tag.
 3. Register it **before** the catch-all `Filter` node if you are also adding an interface-based node.
 
-Example (custom filter node):
+Example (custom filter type):
 ```neon
 services:
-  - class: App\PHPStan\CustomFilterNode
+  - class: App\PHPStan\CustomFilter
     tags:
       - phpstan.sylius.grid.filter
 ```
@@ -864,13 +864,13 @@ class constants, a PHP 8.3 feature). Symlink the target PHP into a throwaway bin
 3. Register in `extension.neon` with `phpstan.collector` tag.
 4. Use in rule(s) by requesting collected data via `CollectedDataNode`.
 
-### Adding a New Field/Filter Node
+### Adding a New Field/Filter Type
 
-1. Implement `FieldNode` or `FilterNode`.
+1. Implement `Field` or `FilterNode`.
 2. Tag service in `extension.neon` with `phpstan.sylius.grid.field` or `phpstan.sylius.grid.filter`.
 3. Ensure `supports()` correctly checks the **concrete** class name.
 4. Register before the catch-all `Filter` node.
-5. Add the node to the affected tests' `getCollectors()` too, then prove it is load-bearing with a
+5. Add the type to the affected tests' `getCollectors()` too, then prove it is load-bearing with a
    deliberately wrong class name.
 
 ---
