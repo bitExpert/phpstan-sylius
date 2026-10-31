@@ -76,10 +76,12 @@ src/
    │     │     └─ FilterIsPartOfResourceClass.php         # Rule: mutator filters must match mutated grid's resource
    │     │
    │     └─ Resource/
+   │        ├─ AbstractResourceOperationRule.php    # Base: operation-attribute walking + class/callable reference validation
    │        ├─ IndexOperationNeedsGridClassRule.php      # Rule: Index metadata grid exists
    │        ├─ ResourceAttributeNeedsFormTypeRule.php    # Rule: AsResource form type exists
    │        ├─ CreateOperationNeedsFactoryRule.php       # Rule: Create operation factory class/method exists
-   │        └─ OperationNeedsValidProviderRule.php       # Rule: operation provider class/method exists
+   │        ├─ OperationNeedsValidProviderRule.php       # Rule: operation provider class/method exists
+   │        └─ OperationNeedsValidProcessorRule.php      # Rule: operation processor class/method exists
 ```
 
 **Note**: `CollectRessourceClassForGridClass.php` contains a typo: `Ressource` (double `s`), which is preserved for historical compatibility.
@@ -141,6 +143,8 @@ This separation improves performance (collectors can run in parallel) and keeps 
 | `IndexOperationNeedsGridClassRule` | `InClassNode` | Validates `#[Index(grid: '...')]` refers to an existing grid class. |
 | `ResourceAttributeNeedsFormTypeRule` | `InClassNode` | Validates `#[AsResource(formType: '...')]` refers to an existing form type. |
 | `CreateOperationNeedsFactoryRule` | `InClassNode` | Validates the `factory`/`factoryMethod` of a `Create` operation (class exists, method exists, `createNew` default, callable must be static). |
+| `OperationNeedsValidProviderRule` | `InClassNode` | Validates the `provider:` argument of every operation attribute (class exists; callable `[Class::class, 'method']` needs an existing static method). |
+| `OperationNeedsValidProcessorRule` | `InClassNode` | Validates the `processor:` argument of every operation attribute (class exists; callable `[Class::class, 'method']` needs an existing static method). |
 
 ### Grid mutators
 
@@ -297,6 +301,34 @@ them separately:
 
 ---
 
+### `AbstractResourceOperationRule`
+
+- **Namespace**: `bitExpert\PHPStan\Sylius\Rule\Resource`
+- **Type**: abstract base class, not registered as a rule itself
+- **Purpose**: shared skeleton for the rules that validate a reference configured on a resource
+  operation attribute — currently the `provider` and `processor` arguments, plus the `factory` /
+  `factoryMethod` pair of the factory rule. It owns:
+  - the `InClassNode` handling and the `ResourceInterface` scope check,
+  - the operation-attribute collection: attributes declared directly on the class **and** nested
+    `new Show(...)` expressions inside `#[AsResource(operations: [...])]`, found recursively in
+    arrays (a `New_` expression is shaped like an `Attribute`, so it is converted into one),
+  - named-argument extraction (positional arguments are never mapped: the operation constructors
+    declare many parameters before `provider`/`processor`, in differing positions),
+  - the class-or-callable validation: class must exist; callable `[Class::class, 'method']` needs an
+    existing **static** method; a string naming an existing plain function is a valid callable and is
+    skipped; `null`/`false`/non-constant arguments are skipped silently.
+- **Subclass hooks**: `isTargetAttribute(string $attributeName): bool` picks the attribute classes a
+  rule cares about (Operation-subclass check or a hardcoded name), `validateAttribute(Attribute, Scope)`
+  implements the argument extraction and validation flavor.
+- **Error identifiers**: derived from a noun (`Provider`, `Processor`, `Factory`), so every rule
+  emits its own `sylius.resource.<noun>ClassNotFound` / `<noun>MethodNotFound` / `<noun>MethodNotStatic`
+  identifiers and the errors can be ignored or baselined separately.
+- **Note**: keeps `@implements Rule<InClassNode>` and `getNodeType()`'s
+  `@return class-string<InClassNode>` in agreement; subclasses do not re-add a defensive
+  `instanceof` guard (see Known Issue 2).
+
+---
+
 ### `OperationNeedsValidProviderRule`
 
 - **Namespace**: `bitExpert\PHPStan\Sylius\Rule\Resource`
@@ -329,9 +361,33 @@ them separately:
 - **Note**: reads the AST instead of `AttributeReflection`, because nested operation `new`
   expressions inside attribute arguments are not reachable through the attribute reflection API.
   Attribute/new-expression class names are resolved through the scope (`resolveName`), honouring
-  namespace and `use` statements; the Operation-subclass check goes through `ReflectionProvider`
-  (`hasClass`/`getClass`/`isSubclassOfClass`), so unknown or non-operation attribute names are
-  ignored without a try/catch.
+  namespace and `use` statements.
+
+---
+
+### `OperationNeedsValidProcessorRule`
+
+- **Namespace**: `bitExpert\PHPStan\Sylius\Rule\Resource`
+- **Node type**: `InClassNode`
+- **Scope**: Classes implementing `Sylius\Resource\Model\ResourceInterface`.
+- **Checks**: the named `processor:` argument of **every** operation attribute of the class — the
+  mirror of the provider rule, sharing `AbstractResourceOperationRule` for all collection and
+  validation logic.
+- **Behaviour** (mirrors `Sylius\Resource\State\Processor::process()`):
+  - `processor: BookProcessor::class` (or a constant string class name) → the class must exist; the
+    runtime looks it up in the `sylius.state_processor` tagged locator and asserts it implements
+    `ProcessorInterface` at runtime (`State\Processor::process()`).
+  - `processor: [BookProcessor::class, 'process']` (callable pair) → the class must exist, the method
+    must exist **and be static**.
+  - `processor: 'processor_function'` where `processor_function` is an existing plain function →
+    valid, skipped.
+  - `processor: null` (or absent) → skipped; the ResourceBundle defaults the processor
+    (`ProcessorResourceMetadataCollectionFactory`).
+  - Non-constant arguments are skipped silently.
+- **Errors**:
+  - `sylius.resource.processorClassNotFound` → `Processor class "%s" not found!`
+  - `sylius.resource.processorMethodNotFound` → `Processor method "%s" not found on processor class "%s"!`
+  - `sylius.resource.processorMethodNotStatic` → `Processor method "%s" on processor class "%s" has to be static when the processor is passed as callable!`
 
 ---
 
@@ -534,6 +590,8 @@ Consequences:
     - bitExpert\PHPStan\Sylius\Rule\Resource\IndexOperationNeedsGridClassRule
     - bitExpert\PHPStan\Sylius\Rule\Resource\ResourceAttributeNeedsFormTypeRule
     - bitExpert\PHPStan\Sylius\Rule\Resource\CreateOperationNeedsFactoryRule
+    - bitExpert\PHPStan\Sylius\Rule\Resource\OperationNeedsValidProviderRule
+    - bitExpert\PHPStan\Sylius\Rule\Resource\OperationNeedsValidProcessorRule
   ```
 - **Services**:
   - `FieldRegistryFactory` → `syliusFieldTypeRegistry` via `createRegistry()`.
@@ -577,10 +635,10 @@ Prefer that over an interface check: interface-based nodes compete with the catc
 - **Configuration**: `phpunit.xml.dist` (suffix `UnitTest.php`, bootstrap `tests/bootstrap.php`).
 - **Rules** use `PHPStan\Testing\RuleTestCase`.
 - **Utility/Registry** use standard `PHPUnit\Framework\TestCase`.
-- 35 tests total. The count is 35 on every lane, but assertions differ by grid-bundle lane: 28 on `^1.15
+- 38 tests total. The count is 38 on every lane, but assertions differ by grid-bundle lane: 31 on `^1.15
   <1.16` (9 skipped — the 8 grid-mutator tests need `GridMutatorInterface` from `>= 1.16`, plus the
-  `Sylius\Component\Grid\GridInterface` case) and 37 on `^1.16` (nothing skipped). A 28/37 split is
-  expected; a 35-vs-something split is not.
+  `Sylius\Component\Grid\GridInterface` case) and 40 on `^1.16` (nothing skipped). A 31/40 split is
+  expected; a 38-vs-something split is not.
 
 #### Gotchas that make tests lie
 
@@ -623,6 +681,7 @@ Prefer that over an interface check: interface-based nodes compete with the catc
 | `IndexOperationNeedsGridClassUnitTest` | Validates `Index` grid reference | `Rule/Resource/data/entity_index.php` |
 | `CreateOperationNeedsFactoryUnitTest` | Validates `Create` factory class/method (incl. callable form, `createNew` default, non-constant skips) | `Rule/Resource/data/entity_factory.php`, `entity_factory_valid.php`, `entity_factory_skip.php`, `factories.php`, `book.php` |
 | `OperationNeedsValidProviderUnitTest` | Validates operation provider class/method (incl. callable form, function-string form, non-resource/non-constant skips) | `Rule/Resource/data/entity_provider.php`, `entity_provider_valid.php`, `entity_provider_skip.php`, `providers.php` |
+| `OperationNeedsValidProcessorUnitTest` | Validates operation processor class/method (incl. callable form, function-string form, non-resource/non-constant skips) | `Rule/Resource/data/entity_processor.php`, `entity_processor_valid.php`, `entity_processor_skip.php`, `processors.php` |
 | `ResourceAwareGridNeedsResourceClassUnitTest` | Missing resource class (old, attribute, 1.16-native, method-less) | `grid_needs_resource_model.php`, `grid_needs_resource_model_attr.php`, `grid_needs_resource_model_native_interface.php`, `grid_needs_resource_model_no_methods.php` |
 | `ResourceAwareGridNeedsResourceClassValidUnitTest` | Validates correct configurations | `grid_valid.php`, `grid_valid_attr.php` |
 | `GridBuilder\FieldIsPartOfResourceClassUnitTest` | Invalid field detection (incl. `createForService`) | `grid.php` |
@@ -661,9 +720,12 @@ All fixtures (for analysis) reside under `tests/bitExpert/PHPStan/Sylius/Rule/*/
 - `entity_factory_valid.php`: three valid configurations (class+method, class-only with `createNew`, static callable) producing no errors.
 - `entity_factory_skip.php`: `factory: false`, non-constant `factory`/`factoryMethod`, and a standalone `#[Create]` on the class (which *is* validated — the one expected error comes from it).
 - `providers.php` (namespace `App\Provider`): `BookProvider` (implements `ProviderInterface`), `MethodNotExistsProvider`, `NotStaticProvider` (instance `provide`), `CallableProvider` (static `provide`), `CallableProviderWrongMethod`, plus a plain `provider_function()`. `ProviderClassNotExists` is deliberately never defined.
+- `processors.php` (namespace `App\Processor`): `BookProcessor` (implements `ProcessorInterface`), `NotStaticProcessor` (instance `process`), `CallableProcessor` (static `process`), `CallableProcessorWrongMethod`, plus a plain `processor_function()`. `ProcessorClassNotExists` is deliberately never defined.
 - `entity_provider.php`: four operation/provider combinations that each trigger one error (missing class, missing callable method, non-static callable method, and a standalone `#[Show]` on the class with a missing method — proving directly-declared attributes are validated too).
+- `entity_processor.php`: the processor mirror of `entity_provider.php` (missing class, missing callable method, non-static callable method, standalone `#[Show]` with a missing method). Its classes are named `Entity*Processor*`/`EntityWithStandaloneShowProcessorAttribute` so they never collide with the provider fixture classes: all fixtures load through `autoload-dev.files` into one namespace, so a duplicate class name is a fatal `Cannot redeclare class` at bootstrap.
 - `entity_provider_valid.php`: four valid configurations (class string, `Class::class`, static callable, existing function string) producing no errors.
 - `entity_provider_skip.php`: `provider: null`, non-constant `provider`, an operation without a `provider` argument, and a non-resource class with a broken provider (never checked — the rule only fires on `ResourceInterface` implementors).
+- `entity_processor_valid.php` / `entity_processor_skip.php`: the processor mirrors of the provider valid/skip fixtures (class string, `Class::class`, static callable, existing function string; `processor: null`, non-constant `processor`, missing `processor` argument, non-resource class).
 
 These files are loaded via `composer.json` `autoload-dev.files` so classes exist during analysis, and
 `Rule/Grid/data/grid.php` + `entity.php` + `grid_custom_filter.php` are excluded from PHPStan analysis
@@ -672,7 +734,8 @@ references, so analysing it is what proves the interface implementation still ho
 The new `Rule/Resource/data/` factory fixtures (`book.php`, `factories.php`, `entity_factory*.php`) are
 excluded as well, because they reference the deliberately-missing factory classes. The provider fixtures
 (`providers.php`, `entity_provider*.php`) follow the same pattern: they reference the deliberately-missing
-`ProviderClassNotExists`, so they are excluded from self-analysis too.
+`ProviderClassNotExists`, so they are excluded from self-analysis too. The processor fixtures
+(`processors.php`, `entity_processor*.php`) are excluded for the same reason (`ProcessorClassNotExists`).
 
 ---
 

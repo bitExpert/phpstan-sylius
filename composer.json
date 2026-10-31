@@ -62,7 +62,11 @@
       "tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/providers.php",
       "tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_provider.php",
       "tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_provider_valid.php",
-      "tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_provider_skip.php"
+      "tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_provider_skip.php",
+      "tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/processors.php",
+      "tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_processor.php",
+      "tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_processor_valid.php",
+      "tests/bitExpert/PHPStan/Sylius/Rule/Resource/data/entity_processor_skip.php"
     ]
   },
   "extra": {
