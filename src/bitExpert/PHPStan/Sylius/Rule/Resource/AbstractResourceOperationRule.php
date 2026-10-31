@@ -20,9 +20,7 @@ use PhpParser\Node\Scalar\String_;
 use PhpParser\Node\Stmt\ClassLike;
 use PHPStan\Analyser\Scope;
 use PHPStan\Node\InClassNode;
-use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\IdentifierRuleError;
-use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
 use PHPStan\Type\ObjectType;
 
@@ -36,31 +34,16 @@ use PHPStan\Type\ObjectType;
  * attribute arguments and are not reachable through the reflection API.
  * Class names are resolved through the scope, honouring the namespace and
  * use statements of the analysed file.
- *
- * @implements Rule<InClassNode>
  */
-abstract class AbstractResourceOperationRule implements Rule
+abstract class AbstractResourceOperationRule extends AbstractResourceRule
 {
-    public function __construct(protected ReflectionProvider $broker)
-    {
-    }
-
-    /**
-     * @return class-string<InClassNode>
-     */
-    public function getNodeType(): string
-    {
-        return InClassNode::class;
-    }
-
     public function processNode(Node $node, Scope $scope): array
     {
         if (!$node instanceof InClassNode) {
             return [];
         }
 
-        $classReflection = $scope->getClassReflection();
-        if ((null === $classReflection) || (!$classReflection->implementsInterface('Sylius\Resource\Model\ResourceInterface'))) {
+        if (null === $this->getResourceClassReflection($scope)) {
             return [];
         }
 
@@ -234,10 +217,8 @@ abstract class AbstractResourceOperationRule implements Rule
         }
 
         $className = null;
-        if ($argument instanceof Expr\ClassConstFetch) {
-            $className = $this->resolveClassName($argument, $scope);
-        } elseif ($argument instanceof String_) {
-            if ($this->broker->hasFunction(new Name($argument->value), $scope)) {
+        if ($argument instanceof Expr\ClassConstFetch || $argument instanceof String_) {
+            if ($argument instanceof String_ && $this->broker->hasFunction(new Name($argument->value), $scope)) {
                 // A plain string naming an existing function is a valid
                 // callable for the runtime: is_callable() is checked before
                 // the service locator lookup, so this is not a class
@@ -245,7 +226,7 @@ abstract class AbstractResourceOperationRule implements Rule
                 return [];
             }
 
-            $className = $argument->value;
+            $className = $this->resolveClassNameFromExpression($argument, $scope);
         }
 
         if (null === $className) {
@@ -367,6 +348,25 @@ abstract class AbstractResourceOperationRule implements Rule
         return 2 === \count($array->items)
             && null !== $array->items[0]
             && null !== $array->items[1];
+    }
+
+    /**
+     * Resolves the class name an argument expression refers to: a
+     * Class::class constant (self::, static:: and parent:: included) or a
+     * plain string. Any other expression (variables, method calls, other
+     * class constants) cannot be resolved statically and yields null.
+     */
+    protected function resolveClassNameFromExpression(Expr $argument, Scope $scope): ?string
+    {
+        if ($argument instanceof Expr\ClassConstFetch) {
+            return $this->resolveClassName($argument, $scope);
+        }
+
+        if ($argument instanceof String_) {
+            return $argument->value;
+        }
+
+        return null;
     }
 
     /**

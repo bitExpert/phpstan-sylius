@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace bitExpert\PHPStan\Sylius\Collector\Grid;
 
+use bitExpert\PHPStan\Util\ConstantString;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Type\Type;
 
@@ -43,12 +44,6 @@ abstract class AbstractGridAttributeCollector extends AbstractGridClassCollector
      */
     protected static function resolveConstantString(?Type $type): ?string
     {
-        if (null === $type) {
-            return null;
-        }
-
-        $constantStrings = $type->getConstantStrings();
-
-        return 1 === \count($constantStrings) ? $constantStrings[0]->getValue() : null;
+        return ConstantString::fromType($type);
     }
 }

@@ -67,13 +67,7 @@ class CreateOperationNeedsFactoryRule extends AbstractResourceOperationRule
                 : $this->validateClassReference($pair[0], $pair[1], true, $line, $scope, 'Factory');
         }
 
-        $className = null;
-        if ($factoryArgument instanceof Expr\ClassConstFetch) {
-            $className = $this->resolveClassName($factoryArgument, $scope);
-        } elseif ($factoryArgument instanceof String_) {
-            $className = $factoryArgument->value;
-        }
-
+        $className = $this->resolveClassNameFromExpression($factoryArgument, $scope);
         if (null === $className) {
             // Anything else (variables, method calls, ...) cannot be resolved
             // statically and is skipped silently.
@@ -90,11 +84,7 @@ class CreateOperationNeedsFactoryRule extends AbstractResourceOperationRule
         // default.
         $methodName = 'createNew';
         if (null !== $factoryMethod) {
-            if ($factoryMethod[0] instanceof String_) {
-                $methodName = $factoryMethod[0]->value;
-            } else {
-                $methodName = null;
-            }
+            $methodName = $factoryMethod[0] instanceof String_ ? $factoryMethod[0]->value : null;
         }
 
         return $this->validateClassReference($className, $methodName, false, $line, $scope, 'Factory');

@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace bitExpert\PHPStan\Sylius\Rule\Grid;
 
+use bitExpert\PHPStan\Util\ConstantString;
 use PhpParser\Node;
 use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Name;
@@ -26,7 +27,6 @@ use PHPStan\Reflection\ReflectionProvider;
 use PHPStan\Rules\IdentifierRuleError;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
-use PHPStan\Type\Type;
 
 /**
  * @implements Rule<InClassNode>
@@ -96,7 +96,7 @@ readonly class ResourceAwareGridNeedsResourceClass implements Rule
             }
 
             $argumentTypes = $attribute->getArgumentTypes();
-            $resourceClass = self::resolveConstantString($argumentTypes['resourceClass'] ?? null);
+            $resourceClass = ConstantString::fromType($argumentTypes['resourceClass'] ?? null);
             if (null !== $resourceClass) {
                 return $resourceClass;
             }
@@ -184,21 +184,5 @@ readonly class ResourceAwareGridNeedsResourceClass implements Rule
     private static function findMethodLine(ClassLike $class, string $methodName): int
     {
         return $class->getMethod($methodName)?->getStartLine() ?? $class->getStartLine();
-    }
-
-    /**
-     * An attribute argument is not guaranteed to be a single constant string.
-     * Calling Type::getValue() on anything else raises an internal error and
-     * aborts the analysis, so only single constant strings are accepted.
-     */
-    private static function resolveConstantString(?Type $argumentType): ?string
-    {
-        if (null === $argumentType) {
-            return null;
-        }
-
-        $constantStrings = $argumentType->getConstantStrings();
-
-        return 1 === \count($constantStrings) ? $constantStrings[0]->getValue() : null;
     }
 }

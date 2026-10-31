@@ -12,82 +12,29 @@ declare(strict_types=1);
 
 namespace bitExpert\PHPStan\Sylius\Rule\Resource;
 
-use PhpParser\Node;
-use PHPStan\Analyser\Scope;
-use PHPStan\Node\InClassNode;
-use PHPStan\Reflection\ReflectionProvider;
-use PHPStan\Rules\Rule;
-use PHPStan\Rules\RuleErrorBuilder;
-use PHPStan\Type\Type;
-
 /**
- * @implements Rule<InClassNode>
+ * Validates the form type referenced by #[AsResource(formType: '...')] on a
+ * resource class: the referenced class has to exist.
  */
-class ResourceAttributeNeedsFormTypeRule implements Rule
+class ResourceAttributeNeedsFormTypeRule extends AbstractResourceAttributeClassRule
 {
-    public function __construct(private ReflectionProvider $broker)
+    protected function getAttributeName(): string
     {
+        return 'Sylius\Resource\Metadata\AsResource';
     }
 
-    /**
-     * @return class-string<InClassNode>
-     */
-    public function getNodeType(): string
+    protected function getArgumentName(): string
     {
-        return InClassNode::class;
+        return 'formType';
     }
 
-    public function processNode(Node $node, Scope $scope): array
+    protected function getNotFoundMessageTemplate(): string
     {
-        if (!$node instanceof InClassNode) {
-            return [];
-        }
-
-        $classReflection = $scope->getClassReflection();
-        if ((null === $classReflection) || (!$classReflection->implementsInterface('Sylius\Resource\Model\ResourceInterface'))) {
-            return [];
-        }
-
-        $resourceClassAttributes = $classReflection->getAttributes();
-        foreach ($resourceClassAttributes as $attribute) {
-            if ('Sylius\Resource\Metadata\AsResource' === $attribute->getName()) {
-                $argumentTypes = $attribute->getArgumentTypes();
-                $formType = self::resolveConstantString($argumentTypes['formType'] ?? null);
-                if (null === $formType) {
-                    continue;
-                }
-
-                try {
-                    $this->broker->getClass($formType);
-                } catch (\Throwable) {
-                    $message = \sprintf('Form Type "%s" not found!', $formType);
-
-                    return [
-                        RuleErrorBuilder::message($message)
-                            ->identifier('sylius.resource.formTypeNotFound')
-                            ->build(),
-                    ];
-                }
-            }
-        }
-
-        return [];
+        return 'Form Type "%s" not found!';
     }
 
-    /**
-     * Attribute arguments are not guaranteed to be a single constant string, for
-     * example #[AsResource(formType: new SomeType())] yields an ObjectType.
-     * Calling Type::getValue() on such an argument raises an internal error and
-     * aborts the whole analysis, so only single constant strings are accepted.
-     */
-    private static function resolveConstantString(?Type $argumentType): ?string
+    protected function getNotFoundIdentifier(): string
     {
-        if (null === $argumentType) {
-            return null;
-        }
-
-        $constantStrings = $argumentType->getConstantStrings();
-
-        return 1 === \count($constantStrings) ? $constantStrings[0]->getValue() : null;
+        return 'sylius.resource.formTypeNotFound';
     }
 }

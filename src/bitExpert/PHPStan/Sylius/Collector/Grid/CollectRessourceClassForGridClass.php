@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace bitExpert\PHPStan\Sylius\Collector\Grid;
 
+use bitExpert\PHPStan\Util\ConstantString;
 use PhpParser\Node;
 use PhpParser\Node\Expr\ClassConstFetch;
 use PhpParser\Node\Name\FullyQualified;
@@ -55,7 +56,7 @@ final class CollectRessourceClassForGridClass implements Collector
             }
 
             $argumentTypes = $attribute->getArgumentTypes();
-            $resourceClassName = self::resolveConstantString($argumentTypes['resourceClass'] ?? null);
+            $resourceClassName = ConstantString::fromType($argumentTypes['resourceClass'] ?? null);
             if (null !== $resourceClassName) {
                 return [$classType->getClassName(), $resourceClassName, $node->getLine()];
             }
@@ -86,20 +87,5 @@ final class CollectRessourceClassForGridClass implements Collector
         }
 
         return null;
-    }
-
-    /**
-     * Extracts a constant string value from a type, returning null if the type
-     * does not resolve to exactly one constant string.
-     */
-    private static function resolveConstantString(?\PHPStan\Type\Type $type): ?string
-    {
-        if (null === $type) {
-            return null;
-        }
-
-        $constantStrings = $type->getConstantStrings();
-
-        return 1 === \count($constantStrings) ? $constantStrings[0]->getValue() : null;
     }
 }

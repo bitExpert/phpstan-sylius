@@ -29,15 +29,19 @@ The extension is auto-discovered via `composer.json` `extra.phpstan.includes` (`
 ```
 src/
 └─ bitExpert/PHPStan/
-   ├─ Util/PropertyName.php                         # Utility for snake_case → camelCase conversion
+   ├─ Util/
+   │  ├─ ConstantString.php                          # Utility: exactly-one constant-string extraction from a Type
+   │  └─ PropertyName.php                            # Utility for snake_case → camelCase conversion
    ├─ Sylius/
    │  ├─ Collector/Grid/
    │  │  ├─ AbstractGridClassCollector.php           # Base: grid + grid mutator detection logic
-   │  │  ├─ AbstractGridBuilderCallCollector.php     # Base: shared StaticCall processing for field/filter factories
-   │  │  ├─ AbstractGridBuilderFieldCollector.php    # Base: field factory collection (grid or mutator scope)
-   │  │  ├─ AbstractGridBuilderFilterCollector.php   # Base: filter factory collection (grid or mutator scope)
+   │  │  ├─ AbstractGridAttributeCollector.php       # Base: attribute matching + constant-string argument extraction
+   │  │  ├─ AbstractGridCallCollector.php            # Base: shared StaticCall processing for field/filter factories
+   │  │  ├─ AbstractGridFieldCollector.php           # Base: field factory collection (grid or mutator scope)
+   │  │  ├─ AbstractGridFilterCollector.php          # Base: filter factory collection (grid or mutator scope)
    │  │  ├─ CollectRessourceClassForGridClass.php    # Collector: grid ↔ resource mapping
    │  │  ├─ CollectGridNameForGridClass.php          # Collector: grid class → grid name (AsGrid name:, getName(), class name)
+   │  │  ├─ CollectGridNameForGridMutatorClass.php    # Collector: mutator class → grid names (#[AsGridMutator], repeatable)
    │  │  │
    │  │  ├─ GridBuilder/
    │  │  │  ├─ CollectFields.php                     # Collector: grid field definitions
@@ -45,8 +49,7 @@ src/
    │  │  │
    │  │  └─ GridMutator/
    │  │     ├─ CollectFields.php                     # Collector: mutator field definitions
-   │  │     ├─ CollectFilter.php                     # Collector: mutator filter definitions
-   │  │     └─ CollectGridNames.php                  # Collector: mutator class → grid names (#[AsGridMutator], repeatable)
+   │  │     └─ CollectFilter.php                     # Collector: mutator filter definitions
    │  │
    │  ├─ Collector/Grid/Field/
    │  │  ├─ Field.php                                # Interface for field type descriptors
@@ -76,7 +79,9 @@ src/
    │     │     └─ FilterIsPartOfResourceClass.php         # Rule: mutator filters must match mutated grid's resource
    │     │
    │     └─ Resource/
-   │        ├─ AbstractResourceOperationRule.php    # Base: operation-attribute walking + class/callable reference validation
+   │        ├─ AbstractResourceRule.php              # Base: InClassNode handling + ResourceInterface scope check
+   │        ├─ AbstractResourceAttributeClassRule.php # Base: validates one constant-string attribute argument (class exists)
+   │        ├─ AbstractResourceOperationRule.php     # Base: operation-attribute walking + class/callable reference validation
    │        ├─ IndexOperationNeedsGridClassRule.php      # Rule: Index metadata grid exists
    │        ├─ ResourceAttributeNeedsFormTypeRule.php    # Rule: AsResource form type exists
    │        ├─ CreateOperationNeedsFactoryRule.php       # Rule: Create operation factory class/method exists
@@ -151,7 +156,7 @@ This separation improves performance (collectors can run in parallel) and keeps 
 Since grid-bundle 1.16 a grid can be mutated by classes tagged `#[AsGridMutator(grid: '<grid name>')]` implementing
 `Sylius\Component\Grid\Mutator\GridMutatorInterface`. The mutator receives a `GridBuilderInterface` and calls the
 same `addField()`/`addFilter()` factories as a grid. The attribute carries only the grid **name**, so the rules join
-`mutator class → grid name (GridMutator\CollectGridNames) → grid class (CollectGridNameForGridClass) → resource class
+`mutator class → grid name (CollectGridNameForGridMutatorClass) → grid class (CollectGridNameForGridClass) → resource class
 (CollectRessourceClassForGridClass, or the AsGrid attribute via CollectGridNameForGridClass, because a 1.16 grid may
 declare nothing but the attribute)`. Grid names are assumed unique; the grid name is derived the way grid-bundle
 derives it — `#[AsGrid(name: '...')]` wins, then a constant-string `getName()` return, then the grid class name
@@ -250,6 +255,8 @@ them separately:
 ### `IndexOperationNeedsGridClassRule`
 
 - **Namespace**: `bitExpert\PHPStan\Sylius\Rule\Resource`
+- **Extends**: `AbstractResourceAttributeClassRule` (see below) — the whole behaviour lives in the base;
+  the subclass only declares attribute name (`Index`), argument name (`grid`), message template and identifier.
 - **Node type**: `InClassNode`
 - **Scope**: Classes implementing `Sylius\Resource\Model\ResourceInterface`.
 - **Checks**: `#[Sylius\Resource\Metadata\Index(grid: 'App\Grid\MyGrid')]`
@@ -260,6 +267,8 @@ them separately:
 ### `ResourceAttributeNeedsFormTypeRule`
 
 - **Namespace**: `bitExpert\PHPStan\Sylius\Rule\Resource`
+- **Extends**: `AbstractResourceAttributeClassRule` — same shape as the Index rule, only the four
+  declared strings differ.
 - **Node type**: `InClassNode`
 - **Scope**: Classes implementing `Sylius\Resource\Model\ResourceInterface`.
 - **Checks**: `#[Sylius\Resource\Metadata\AsResource(formType: 'App\Form\MyType')]`
@@ -301,14 +310,47 @@ them separately:
 
 ---
 
-### `AbstractResourceOperationRule`
+### `AbstractResourceRule`
 
 - **Namespace**: `bitExpert\PHPStan\Sylius\Rule\Resource`
 - **Type**: abstract base class, not registered as a rule itself
+- **Purpose**: the shared entry point of every resource rule. It owns:
+  - the `InClassNode` node type and `getNodeType()`,
+  - `getResourceClassReflection(Scope): ?ClassReflection` — the `ResourceInterface` scope guard,
+    returning the class reflection of the analysed node when it is a Sylius resource, null otherwise.
+- **Subclasses**: `AbstractResourceAttributeClassRule` and `AbstractResourceOperationRule`.
+- **Gotcha**: a subclass that extends this base must **not** carry its own
+  `@implements Rule<InClassNode>` tag — PHPStan reports `generics.noParent` ("has @implements tag,
+  but does not implement any interface") when the interface is inherited instead of implemented
+  directly. The `@implements` tag only lives on the class that implements `Rule` itself.
+
+---
+
+### `AbstractResourceAttributeClassRule`
+
+- **Namespace**: `bitExpert\PHPStan\Sylius\Rule\Resource`
+- **Type**: abstract base class, not registered as a rule itself
+- **Purpose**: the whole shared shape of "validate that one constant-string argument of a class-level
+  attribute names an existing class": scope guard (inherited) → scan class attributes for one name →
+  read one named argument via `ConstantString::fromType()` → check the class exists → emit one error.
+  The attribute is read through `AttributeReflection`, so only attributes declared directly on the
+  resource class are seen — operations nested inside `AsResource(operations: [...])` are invisible
+  here (use `AbstractResourceOperationRule` for those).
+- **Subclass hooks** (four strings, nothing else): `getAttributeName()`, `getArgumentName()`,
+  `getNotFoundMessageTemplate()` (with a `%s` placeholder), `getNotFoundIdentifier()`.
+- **Subclasses**: `IndexOperationNeedsGridClassRule` (`Index` / `grid`),
+  `ResourceAttributeNeedsFormTypeRule` (`AsResource` / `formType`).
+
+---
+
+### `AbstractResourceOperationRule`
+
+- **Namespace**: `bitExpert\PHPStan\Sylius\Rule\Resource`
+- **Type**: abstract base class, not registered as a rule itself; extends `AbstractResourceRule`,
+  from which it inherits the `InClassNode` handling and the `ResourceInterface` scope check
 - **Purpose**: shared skeleton for the rules that validate a reference configured on a resource
   operation attribute — currently the `provider` and `processor` arguments, plus the `factory` /
   `factoryMethod` pair of the factory rule. It owns:
-  - the `InClassNode` handling and the `ResourceInterface` scope check,
   - the operation-attribute collection: attributes declared directly on the class **and** nested
     `new Show(...)` expressions inside `#[AsResource(operations: [...])]`, found recursively in
     arrays (a `New_` expression is shaped like an `Attribute`, so it is converted into one),
@@ -316,16 +358,20 @@ them separately:
     declare many parameters before `provider`/`processor`, in differing positions),
   - the class-or-callable validation: class must exist; callable `[Class::class, 'method']` needs an
     existing **static** method; a string naming an existing plain function is a valid callable and is
-    skipped; `null`/`false`/non-constant arguments are skipped silently.
+    skipped; `null`/`false`/non-constant arguments are skipped silently,
+  - `resolveClassNameFromExpression(Expr, Scope): ?string` — the shared dispatch for a
+    `Class::class` constant (self::/static::/parent:: included) or a plain string; anything else
+    yields null. Used by `validateClassOrCallableArgument()` and the factory rule alike.
 - **Subclass hooks**: `isTargetAttribute(string $attributeName): bool` picks the attribute classes a
   rule cares about (Operation-subclass check or a hardcoded name), `validateAttribute(Attribute, Scope)`
   implements the argument extraction and validation flavor.
 - **Error identifiers**: derived from a noun (`Provider`, `Processor`, `Factory`), so every rule
   emits its own `sylius.resource.<noun>ClassNotFound` / `<noun>MethodNotFound` / `<noun>MethodNotStatic`
   identifiers and the errors can be ignored or baselined separately.
-- **Note**: keeps `@implements Rule<InClassNode>` and `getNodeType()`'s
-  `@return class-string<InClassNode>` in agreement; subclasses do not re-add a defensive
-  `instanceof` guard (see Known Issue 2).
+- **Note**: does not re-declare `@implements Rule<InClassNode>` — the tag lives on
+  `AbstractResourceRule`, which implements `Rule` directly; re-adding it on the subclass trips
+  `generics.noParent`. Subclasses do not re-add a defensive `instanceof` guard either
+  (see Known Issue 2).
 
 ---
 
@@ -406,9 +452,54 @@ them separately:
       the attribute check is what registers a mutator, the interface fallback alone is inert.
   - `isSubtypeOf(Type $type, string $superType): bool`
     - Returns `true` if `$type` is a subtype of `$superType`.
-- **Usage**: All grid collectors extend this.
+- **Usage**: All grid collectors extend this, directly or through `AbstractGridAttributeCollector` /
+  `AbstractGridCallCollector`.
 - **Note**: `scopeIsGrid()` does not match traits analysed on their own, because the scope class is the
   trait itself. Only fields declared in a class/trait that a real grid uses are collected.
+
+---
+
+### `AbstractGridAttributeCollector`
+
+- **Namespace**: `bitExpert\PHPStan\Sylius\Collector\Grid`
+- **Type**: abstract base class extending `AbstractGridClassCollector`, not a collector itself
+- **Purpose**: shared attribute-reading logic for the collectors that join grids and mutators by name.
+- **Key methods**:
+  - `getAttributeArgumentTypes(ClassReflection, string $attributeName): iterable` — yields the
+    argument-type maps of **every** attribute with the given name on the class, so repeatable
+    attributes (`AsGridMutator`) are naturally covered.
+  - `resolveConstantString(?Type): ?string` — thin delegate of `Util\ConstantString::fromType()`.
+- **Subclasses**: `CollectGridNameForGridClass`, `CollectGridNameForGridMutatorClass`.
+- **Why it exists**: the grid-name and mutator-name collectors are the join keys of the whole mutator
+  chain, so their extraction semantics must stay identical — the shared base makes drift between
+  them structurally impossible.
+
+---
+
+### `CollectGridNameForGridClass`
+
+- **Namespace**: `bitExpert\PHPStan\Sylius\Collector\Grid`
+- **Type**: `Collector<InClassNode, array{string, string, string|null, int}>`
+- **Returns**: `[gridClass, gridName, resourceClass|null, line]`
+- **Logic**: the name is derived the way grid-bundle derives it:
+  1. `#[AsGrid(name: '...')]` — the explicit opt-in.
+  2. The value returned by `getName()`, when a plain constant string or a class constant (grid scope only).
+  3. The grid class name (grid scope only).
+- **Note**: the resource class is collected from the attribute only; the legacy `getResourceClass()`
+  path stays in `CollectRessourceClassForGridClass`.
+
+---
+
+### `CollectGridNameForGridMutatorClass`
+
+- **Namespace**: `bitExpert\PHPStan\Sylius\Collector\Grid`
+- **Type**: `Collector<InClassNode, array{string, non-empty-list<string>, int}>`
+- **Returns**: `[mutatorClass, list<gridName>, line]`
+- **Logic**: every `#[AsGridMutator(grid: '...')]` attribute of the class contributes one grid name
+  (named `grid` argument or positional `[0]`, constant strings only). The attribute is repeatable, so
+  a mutator attached to several grids yields several names — mirroring the `GridMutatorPass`.
+- **Note**: the singular class name (`CollectGridName...` + `ForGridMutatorClass` suffix) matches
+  `CollectGridNameForGridClass`; it collects a *list* per mutator but one tuple per class.
 
 ---
 
@@ -418,9 +509,10 @@ them separately:
 - **Type**: `Collector<MethodReturnStatementsNode, array{string, string, int}>`
 - **Returns**: `[gridClass, resourceClass, line]`
 - **Logic**:
-  1. Check `#AsGrid(resourceClass: ...)` attribute for constant string.
+  1. Check `#AsGrid(resourceClass: ...)` attribute for constant string (via `Util\ConstantString::fromType()`).
   2. Fallback to `getResourceClass()` method returning `String_` or `ClassConstFetch`.
-- **Note**: Typo in class name (`Ressource` with double `s`).
+- **Note**: Typo in class name (`Ressource` with double `s`). Does **not** extend
+  `AbstractGridAttributeCollector` — it runs on `MethodReturnStatementsNode`, not `InClassNode`.
 
 ---
 
@@ -564,6 +656,24 @@ Consequences:
 
 ## Utility
 
+### `ConstantString::fromType`
+
+- **Signature**: `static function fromType(?Type $type): ?string`
+- **Behavior**:
+  - `null` in, `null` out.
+  - Returns the value of the type's constant strings **only when there is exactly one**; anything
+    else (multiple constant strings, an ObjectType, a union, ...) yields `null`.
+- **Why it exists**: an attribute argument is never guaranteed to be a single constant string —
+  `#[Index(grid: new SomeType())]` yields an `ObjectType`, and calling `Type::getValue()` on such an
+  argument raises an internal PHPStan error that aborts the whole analysis. Every rule and collector
+  that reads an attribute argument goes through this helper instead.
+- **Usage**: `AbstractGridAttributeCollector::resolveConstantString()`, `CollectRessourceClassForGridClass`,
+  `ResourceAwareGridNeedsResourceClass`, `AbstractResourceAttributeClassRule`.
+- **Do not** re-inline this logic into a rule or collector; the exactly-one check is the load-bearing
+  part (a bare `getConstantStrings()[0]` crashes on non-constant arguments).
+
+---
+
 ### `PropertyName::convertSnakeToCamelCase`
 
 - **Signature**: `static function convertSnakeToCamelCase(string $string): string`
@@ -596,8 +706,9 @@ Consequences:
 - **Services**:
   - `FieldRegistryFactory` → `syliusFieldTypeRegistry` via `createRegistry()`.
   - `FilterRegistryFactory` → `syliusFilterTypeRegistry`.
-  - Collectors (`CollectRessourceClassForGridClass`, `CollectGridNameForGridClass`, `GridBuilder\CollectFields`,
-    `GridBuilder\CollectFilter`, `GridMutator\CollectFields`, `GridMutator\CollectFilter`, `GridMutator\CollectGridNames`)
+  - Collectors (`CollectRessourceClassForGridClass`, `CollectGridNameForGridClass`,
+    `CollectGridNameForGridMutatorClass`, `GridBuilder\CollectFields`,
+    `GridBuilder\CollectFilter`, `GridMutator\CollectFields`, `GridMutator\CollectFilter`)
     tagged `phpstan.collector`.
   - All field/filter nodes tagged with `phpstan.sylius.grid.field` / `phpstan.sylius.grid.filter`.
   - Filter nodes are registered specific-first; the catch-all `Filter` node is deliberately last.
@@ -804,6 +915,11 @@ class constants, a PHP 8.3 feature). Symlink the target PHP into a throwaway bin
   defensive `instanceof` guard — it can mask a real annotation mistake instead of catching one. Every
   rule's `getNodeType()` now carries `@return class-string<ConcreteNodeType>`, so PHPStan rejects a
   mismatch between the two; do not widen that back to a bare `class-string`, or the safety net goes away.
+- **Corollary (rule inheritance)**: the `@implements Rule<...>` tag lives only on the class that
+  implements `Rule` *directly* (`AbstractResourceRule`, `AbstractGridBuilderResourceRule`, the
+  standalone rules). A subclass that inherits the interface must **not** re-declare the tag —
+  PHPStan reports `generics.noParent` ("has @implements tag, but does not implement any interface")
+  even though the interface is inherited.
 
 ### 3. Node/collector coverage is opt-in
 - A field or filter class with **no** matching node is silently never validated — no error, no warning.
@@ -818,8 +934,9 @@ class constants, a PHP 8.3 feature). Symlink the target PHP into a throwaway bin
 - **Consequence**: Users cannot validate recursive filter fields.
 
 ### 5. Field errors are attributed to the grid's file, not the node's
-- All four grid builder/mutator rules use `$ownerFilesMap[$ownerClass]`, which is **last-write-wins per owning class** (grid
-  or mutator) and shared by all fields of that owner.
+- All four grid builder/mutator rules flatten the collected tuples via
+  `AbstractGridBuilderResourceRule::collectOwnerItems()`, where the file of each tuple is
+  **last-write-wins per owning class** (grid or mutator) and shared by all fields of that owner.
 - **Impact**: A grid split across multiple files reports every field error against whichever file was seen
   last. Fields inside a trait are always attributed to the using class, because the node's real file is not
   recoverable: PHP-Parser 5 exposes only an integer `startFilePos` (no path), and `Scope::getFile()`,
@@ -852,7 +969,14 @@ class constants, a PHP 8.3 feature). Symlink the target PHP into a throwaway bin
 ### Adding a New Rule
 
 1. Create rule class in `src/bitExpert/PHPStan/Sylius/Rule/...`.
-2. Implement `PHPStan\Rules\Rule<NodeType>` — make `@implements` and `getNodeType()` agree.
+2. Pick the right base first — most rules should not implement `Rule` from scratch:
+   - Resource class + one class-level attribute with one constant-string argument → extend
+     `AbstractResourceAttributeClassRule` and declare the four strings. That is the whole rule.
+   - Resource class + operation attributes (incl. nested `AsResource(operations: [...])`) → extend
+     `AbstractResourceOperationRule` and implement `isTargetAttribute()` + `validateAttribute()`.
+   - Anything else: implement `PHPStan\Rules\Rule<NodeType>` — make `@implements` and `getNodeType()`
+     agree, and do not re-declare `@implements` when extending a base that already implements `Rule`
+     (Known Issue 2 corollary).
 3. Register in `extension.neon` under `rules`.
 4. Add test in `tests/.../Rule/.../...UnitTest.php`.
 5. Add fixture if needed.
@@ -860,9 +984,15 @@ class constants, a PHP 8.3 feature). Symlink the target PHP into a throwaway bin
 ### Adding a New Collector
 
 1. Implement `PHPStan\Collectors\Collector<NodeType, mixed>`.
-2. Extend `AbstractGridClassCollector` for grid-related logic.
+2. Extend `AbstractGridClassCollector` for grid-related logic; extend
+   `AbstractGridAttributeCollector` when reading (repeatable) grid/mutator attributes, and use its
+   `getAttributeArgumentTypes()` + `ConstantString::fromType()` instead of hand-rolling the
+   attribute scan. Do not copy `resolveConstantString()` inline — the exactly-one check is
+   load-bearing (see Utility).
 3. Register in `extension.neon` with `phpstan.collector` tag.
 4. Use in rule(s) by requesting collected data via `CollectedDataNode`.
+5. Add the collector to the affected tests' `getCollectors()` too — the test registries are
+   hand-built and `extension.neon` registration alone changes nothing in them.
 
 ### Adding a New Field/Filter Type
 
