@@ -13,7 +13,7 @@ declare(strict_types=1);
 namespace bitExpert\PHPStan\Sylius\Rule\Grid\GridMutator;
 
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectGridNameForGridClass;
-use bitExpert\PHPStan\Sylius\Collector\Grid\CollectGridNamesForGridMutatorClass;
+use bitExpert\PHPStan\Sylius\Collector\Grid\CollectGridNameForGridMutatorClass;
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectRessourceClassForGridClass;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Field\CallableField;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Field\DateTimeField;
@@ -50,7 +50,7 @@ class FieldIsPartOfResourceClassValidUnitTest extends RuleTestCase
         return [
             new CollectRessourceClassForGridClass(),
             new CollectGridNameForGridClass(),
-            new CollectGridNamesForGridMutatorClass(),
+            new CollectGridNameForGridMutatorClass(),
             new CollectFields(new DefaultFieldRegistry($fields)),
         ];
     }

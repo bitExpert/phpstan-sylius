@@ -13,7 +13,7 @@ declare(strict_types=1);
 namespace bitExpert\PHPStan\Sylius\Rule\Grid;
 
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectGridNameForGridClass;
-use bitExpert\PHPStan\Sylius\Collector\Grid\CollectGridNamesForGridMutatorClass;
+use bitExpert\PHPStan\Sylius\Collector\Grid\CollectGridNameForGridMutatorClass;
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectRessourceClassForGridClass;
 use PhpParser\Node;
 use PHPStan\Analyser\Scope;
@@ -184,7 +184,7 @@ abstract readonly class AbstractGridBuilderResourceRule implements Rule
         }
 
         $mutatorResourceMap = [];
-        $mutators = $node->get(CollectGridNamesForGridMutatorClass::class);
+        $mutators = $node->get(CollectGridNameForGridMutatorClass::class);
         /** @var array<string, list<array{string, non-empty-list<string>, int}>> $mutators */
         foreach ($mutators as $mapping) {
             foreach ($mapping as $mappingConfig) {

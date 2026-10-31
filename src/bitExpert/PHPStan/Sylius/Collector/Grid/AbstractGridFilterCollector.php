@@ -26,7 +26,7 @@ use PHPStan\Type\Type;
  *
  * @implements Collector<StaticCall, array{string, non-empty-array<string>, -1|int<1, max>}>
  */
-abstract class AbstractGridBuilderFilterCollector extends AbstractGridBuilderCallCollector implements Collector
+abstract class AbstractGridFilterCollector extends AbstractGridCallCollector implements Collector
 {
     private const FACTORY_METHODS = ['create'];
 

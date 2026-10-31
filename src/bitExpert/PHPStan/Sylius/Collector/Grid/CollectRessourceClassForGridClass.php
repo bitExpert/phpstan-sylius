@@ -49,17 +49,15 @@ final class CollectRessourceClassForGridClass implements Collector
         $classType = new ObjectType($classReflection->getName());
 
         // new Grid Bundle logic: check the #AsGrid attribute of the class
-        $attributes = $classReflection->getAttributes();
-        foreach ($attributes as $attribute) {
-            if ('Sylius\Component\Grid\Attribute\AsGrid' === $attribute->getName()) {
-                $argumentTypes = $attribute->getArgumentTypes();
-                foreach ($argumentTypes as $key => $argumentType) {
-                    if ('resourceClass' === $key) {
-                        $resourceClassName = $argumentType->getConstantStrings()[0]->getValue();
+        foreach ($classReflection->getAttributes() as $attribute) {
+            if ('Sylius\Component\Grid\Attribute\AsGrid' !== $attribute->getName()) {
+                continue;
+            }
 
-                        return [$classType->getClassName(), $resourceClassName, $node->getLine()];
-                    }
-                }
+            $argumentTypes = $attribute->getArgumentTypes();
+            $resourceClassName = self::resolveConstantString($argumentTypes['resourceClass'] ?? null);
+            if (null !== $resourceClassName) {
+                return [$classType->getClassName(), $resourceClassName, $node->getLine()];
             }
         }
 
@@ -88,5 +86,20 @@ final class CollectRessourceClassForGridClass implements Collector
         }
 
         return null;
+    }
+
+    /**
+     * Extracts a constant string value from a type, returning null if the type
+     * does not resolve to exactly one constant string.
+     */
+    private static function resolveConstantString(?\PHPStan\Type\Type $type): ?string
+    {
+        if (null === $type) {
+            return null;
+        }
+
+        $constantStrings = $type->getConstantStrings();
+
+        return 1 === \count($constantStrings) ? $constantStrings[0]->getValue() : null;
     }
 }

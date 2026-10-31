@@ -12,13 +12,13 @@ declare(strict_types=1);
 
 namespace bitExpert\PHPStan\Sylius\Collector\Grid\GridMutator;
 
-use bitExpert\PHPStan\Sylius\Collector\Grid\AbstractGridBuilderFilterCollector;
+use bitExpert\PHPStan\Sylius\Collector\Grid\AbstractGridFilterCollector;
 use PHPStan\Analyser\Scope;
 
 /**
  * Collects the filter factory calls a grid mutator adds to the grid builder.
  */
-final class CollectFilter extends AbstractGridBuilderFilterCollector
+final class CollectFilter extends AbstractGridFilterCollector
 {
     protected function scopeIsBuilderScope(Scope $scope): bool
     {

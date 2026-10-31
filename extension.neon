@@ -20,7 +20,7 @@ services:
 		tags:
 			- phpstan.collector
 	-
-		class: bitExpert\PHPStan\Sylius\Collector\Grid\GridMutator\CollectGridNames
+		class: bitExpert\PHPStan\Sylius\Collector\Grid\CollectGridNameForGridMutatorClass
 		tags:
 			- phpstan.collector
 	-

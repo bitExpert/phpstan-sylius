@@ -25,7 +25,7 @@ use PHPStan\Type\ObjectType;
  *
  * @implements Collector<StaticCall, array{0: string, 1: mixed, 2: int}>
  */
-abstract class AbstractGridBuilderCallCollector extends AbstractGridClassCollector implements Collector
+abstract class AbstractGridCallCollector extends AbstractGridClassCollector implements Collector
 {
     /**
      * @return class-string<StaticCall>

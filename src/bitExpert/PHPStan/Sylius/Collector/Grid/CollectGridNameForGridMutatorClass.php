@@ -29,7 +29,7 @@ use PHPStan\Node\InClassNode;
  *
  * @implements Collector<InClassNode, array{string, non-empty-list<string>, int}>
  */
-final class CollectGridNamesForGridMutatorClass extends AbstractGridClassCollector implements Collector
+final class CollectGridNameForGridMutatorClass extends AbstractGridAttributeCollector implements Collector
 {
     private const ATTRIBUTE = 'Sylius\Component\Grid\Attribute\AsGridMutator';
 
@@ -54,23 +54,18 @@ final class CollectGridNamesForGridMutatorClass extends AbstractGridClassCollect
 
         $gridNames = [];
         $line = $node->getLine();
-        foreach ($classReflection->getAttributes() as $attribute) {
-            if (self::ATTRIBUTE !== $attribute->getName()) {
-                continue;
-            }
-
-            $argumentTypes = $attribute->getArgumentTypes();
+        foreach ($this->getAttributeArgumentTypes($classReflection, self::ATTRIBUTE) as $argumentTypes) {
             $gridArgument = $argumentTypes['grid'] ?? ($argumentTypes[0] ?? null);
             if (null === $gridArgument) {
                 continue;
             }
 
-            $constantStrings = $gridArgument->getConstantStrings();
-            if (1 !== \count($constantStrings)) {
+            $gridName = self::resolveConstantString($gridArgument);
+            if (null === $gridName) {
                 continue;
             }
 
-            $gridNames[] = $constantStrings[0]->getValue();
+            $gridNames[] = $gridName;
             $line = $node->getOriginalNode()->getStartLine();
         }
 

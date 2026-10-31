@@ -13,7 +13,7 @@ declare(strict_types=1);
 namespace bitExpert\PHPStan\Sylius\Rule\Grid\GridMutator;
 
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectGridNameForGridClass;
-use bitExpert\PHPStan\Sylius\Collector\Grid\CollectGridNamesForGridMutatorClass;
+use bitExpert\PHPStan\Sylius\Collector\Grid\CollectGridNameForGridMutatorClass;
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectRessourceClassForGridClass;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\BooleanFilter;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\DateFilter;
@@ -57,7 +57,7 @@ class FilterIsPartOfResourceClassUnitTest extends RuleTestCase
         return [
             new CollectRessourceClassForGridClass(),
             new CollectGridNameForGridClass(),
-            new CollectGridNamesForGridMutatorClass(),
+            new CollectGridNameForGridMutatorClass(),
             new CollectFilter(new DefaultFilterRegistry($filters)),
         ];
     }

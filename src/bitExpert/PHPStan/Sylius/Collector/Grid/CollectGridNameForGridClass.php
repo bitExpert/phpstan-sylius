@@ -41,7 +41,7 @@ use PHPStan\Node\InClassNode;
  *
  * @implements Collector<InClassNode, array{string, string, string|null, int}>
  */
-final class CollectGridNameForGridClass extends AbstractGridClassCollector implements Collector
+final class CollectGridNameForGridClass extends AbstractGridAttributeCollector implements Collector
 {
     private const ATTRIBUTE = 'Sylius\Component\Grid\Attribute\AsGrid';
 
@@ -65,7 +65,7 @@ final class CollectGridNameForGridClass extends AbstractGridClassCollector imple
         $classReflection = $node->getClassReflection();
         $classLike = $node->getOriginalNode();
 
-        [$attributeName, $resourceClassName] = $this->resolveAttributeValues($classReflection->getAttributes());
+        [$attributeName, $resourceClassName] = $this->resolveAttributeValues($classReflection);
 
         // The attribute is the explicit opt-in; everything else is only
         // collected for an actual grid class, so a getName() method on some
@@ -91,22 +91,14 @@ final class CollectGridNameForGridClass extends AbstractGridClassCollector imple
      * legacy AbstractGrid, and then the attribute is what makes the class a
      * grid.
      *
-     * @param list<\PHPStan\Reflection\AttributeReflection> $attributes
-     *
      * @return array{string|null, string|null}
      */
-    private function resolveAttributeValues(array $attributes): array
+    private function resolveAttributeValues(\PHPStan\Reflection\ClassReflection $classReflection): array
     {
         $gridName = null;
         $resourceClassName = null;
 
-        foreach ($attributes as $attribute) {
-            if (self::ATTRIBUTE !== $attribute->getName()) {
-                continue;
-            }
-
-            $argumentTypes = $attribute->getArgumentTypes();
-
+        foreach ($this->getAttributeArgumentTypes($classReflection, self::ATTRIBUTE) as $argumentTypes) {
             $gridName = self::resolveConstantString($argumentTypes['name'] ?? null) ?? $gridName;
             $resourceClassName = self::resolveConstantString($argumentTypes['resourceClass'] ?? null) ?? $resourceClassName;
         }
@@ -143,20 +135,5 @@ final class CollectGridNameForGridClass extends AbstractGridClassCollector imple
         }
 
         return null;
-    }
-
-    /**
-     * An attribute argument is not guaranteed to be a single constant string.
-     * Anything else cannot be joined on, so only constant strings are accepted.
-     */
-    private static function resolveConstantString(?\PHPStan\Type\Type $argumentType): ?string
-    {
-        if (null === $argumentType) {
-            return null;
-        }
-
-        $constantStrings = $argumentType->getConstantStrings();
-
-        return 1 === \count($constantStrings) ? $constantStrings[0]->getValue() : null;
     }
 }

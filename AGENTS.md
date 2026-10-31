@@ -157,8 +157,8 @@ declare nothing but the attribute)`. Grid names are assumed unique; the grid nam
 derives it — `#[AsGrid(name: '...')]` wins, then a constant-string `getName()` return, then the grid class name
 (the `InvokableGridPass` default and the convention mutators rely on). A grid with a *computed* custom name is not
 joined: its mutators' fields stay unvalidated, never falsely reported.
-The field/filter collectors share their logic with the grid ones via `AbstractGridBuilderCallCollector` +
-`AbstractGridBuilderFieldCollector`/`AbstractGridBuilderFilterCollector`; only the scope predicate differs
+The field/filter collectors share their logic with the grid ones via `AbstractGridCallCollector` +
+`AbstractGridFieldCollector`/`AbstractGridFilterCollector`; only the scope predicate differs
 (`scopeIsGrid()` vs `scopeIsGridMutator()`). The rules share `AbstractGridBuilderResourceRule`, which owns the
 resource-map resolution (`resolveGridResourceMap` / `resolveMutatorResourceMap`), the error attribution and the
 recursive dotted-path walk; concrete rules only pick the collector and the validation flavor.
