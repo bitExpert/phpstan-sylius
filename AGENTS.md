@@ -78,7 +78,8 @@ src/
    │     └─ Resource/
    │        ├─ IndexOperationNeedsGridClassRule.php      # Rule: Index metadata grid exists
    │        ├─ ResourceAttributeNeedsFormTypeRule.php    # Rule: AsResource form type exists
-   │        └─ CreateOperationNeedsFactoryRule.php       # Rule: Create operation factory class/method exists
+   │        ├─ CreateOperationNeedsFactoryRule.php       # Rule: Create operation factory class/method exists
+   │        └─ OperationNeedsValidProviderRule.php       # Rule: operation provider class/method exists
 ```
 
 **Note**: `CollectRessourceClassForGridClass.php` contains a typo: `Ressource` (double `s`), which is preserved for historical compatibility.
@@ -293,6 +294,44 @@ them separately:
   expressions inside attribute arguments are not reachable through the attribute reflection API.
   PHPStan's parser resolves all class names to their fully qualified form, so a plain string
   comparison identifies the attributes.
+
+---
+
+### `OperationNeedsValidProviderRule`
+
+- **Namespace**: `bitExpert\PHPStan\Sylius\Rule\Resource`
+- **Node type**: `InClassNode`
+- **Scope**: Classes implementing `Sylius\Resource\Model\ResourceInterface`.
+- **Checks**: the named `provider:` argument of **every** operation attribute of the class — declared
+  directly on the class and nested as `new Show(...)` etc. inside `#[AsResource(operations: [...])]`.
+  Every attribute class extending `Sylius\Resource\Metadata\Operation` counts as an operation
+  (mirroring the `is_subclass_of()` check in `AttributesResourceMetadataCollectionFactory`), which
+  keeps the `Api\*` operations **and** custom operation classes covered; the check is not a hardcoded
+  name list.
+- **Behaviour**:
+  - `provider: BookProvider::class` (or a constant string class name) → the class must exist; the
+    runtime looks it up in the `sylius.state_provider` tagged locator (`State\Provider::provide()`).
+  - `provider: [BookProvider::class, 'provide']` (callable pair) → the class must exist, the method
+    must exist **and be static**, because the runtime invokes the callable as a plain static
+    callable (`is_callable(['NonStaticClass', 'method'])` is false for instance methods).
+  - `provider: 'provider_function'` where `provider_function` is an existing plain function →
+    valid, skipped: the runtime checks `is_callable()` before the locator lookup.
+  - `provider: null` (or absent) → skipped; the ResourceBundle defaults the provider
+    (`ProviderResourceMetadataCollectionFactory`).
+  - Non-constant arguments (variables, `new stdClass()`, method calls) are skipped silently; the
+    analysis is never aborted for them.
+  - Only the named `provider` argument is read: every operation constructor declares many
+    parameters before `provider` and their positions differ between the operation classes.
+- **Errors**:
+  - `sylius.resource.providerClassNotFound` → `Provider class "%s" not found!`
+  - `sylius.resource.providerMethodNotFound` → `Provider method "%s" not found on provider class "%s"!`
+  - `sylius.resource.providerMethodNotStatic` → `Provider method "%s" on provider class "%s" has to be static when the provider is passed as callable!`
+- **Note**: reads the AST instead of `AttributeReflection`, because nested operation `new`
+  expressions inside attribute arguments are not reachable through the attribute reflection API.
+  Attribute/new-expression class names are resolved through the scope (`resolveName`), honouring
+  namespace and `use` statements; the Operation-subclass check goes through `ReflectionProvider`
+  (`hasClass`/`getClass`/`isSubclassOfClass`), so unknown or non-operation attribute names are
+  ignored without a try/catch.
 
 ---
 
@@ -538,10 +577,10 @@ Prefer that over an interface check: interface-based nodes compete with the catc
 - **Configuration**: `phpunit.xml.dist` (suffix `UnitTest.php`, bootstrap `tests/bootstrap.php`).
 - **Rules** use `PHPStan\Testing\RuleTestCase`.
 - **Utility/Registry** use standard `PHPUnit\Framework\TestCase`.
-- 32 tests total. The count is 32 on every lane, but assertions differ by grid-bundle lane: 25 on `^1.15
+- 35 tests total. The count is 35 on every lane, but assertions differ by grid-bundle lane: 28 on `^1.15
   <1.16` (9 skipped — the 8 grid-mutator tests need `GridMutatorInterface` from `>= 1.16`, plus the
-  `Sylius\Component\Grid\GridInterface` case) and 34 on `^1.16` (nothing skipped). A 25/34 split is
-  expected; a 32-vs-something split is not.
+  `Sylius\Component\Grid\GridInterface` case) and 37 on `^1.16` (nothing skipped). A 28/37 split is
+  expected; a 35-vs-something split is not.
 
 #### Gotchas that make tests lie
 
@@ -583,6 +622,7 @@ Prefer that over an interface check: interface-based nodes compete with the catc
 | `ResourceAttributeNeedsFormTypeUnitTest` | Validates `AsResource` form type existence | `Rule/Resource/data/entity.php`, `entity_non_constant_attribute.php` |
 | `IndexOperationNeedsGridClassUnitTest` | Validates `Index` grid reference | `Rule/Resource/data/entity_index.php` |
 | `CreateOperationNeedsFactoryUnitTest` | Validates `Create` factory class/method (incl. callable form, `createNew` default, non-constant skips) | `Rule/Resource/data/entity_factory.php`, `entity_factory_valid.php`, `entity_factory_skip.php`, `factories.php`, `book.php` |
+| `OperationNeedsValidProviderUnitTest` | Validates operation provider class/method (incl. callable form, function-string form, non-resource/non-constant skips) | `Rule/Resource/data/entity_provider.php`, `entity_provider_valid.php`, `entity_provider_skip.php`, `providers.php` |
 | `ResourceAwareGridNeedsResourceClassUnitTest` | Missing resource class (old, attribute, 1.16-native, method-less) | `grid_needs_resource_model.php`, `grid_needs_resource_model_attr.php`, `grid_needs_resource_model_native_interface.php`, `grid_needs_resource_model_no_methods.php` |
 | `ResourceAwareGridNeedsResourceClassValidUnitTest` | Validates correct configurations | `grid_valid.php`, `grid_valid_attr.php` |
 | `GridBuilder\FieldIsPartOfResourceClassUnitTest` | Invalid field detection (incl. `createForService`) | `grid.php` |
@@ -620,13 +660,19 @@ All fixtures (for analysis) reside under `tests/bitExpert/PHPStan/Sylius/Rule/*/
 - `entity_factory.php`: six `AsResource`+`Create` combinations that each trigger one error (missing class, missing method, missing `createNew` default, missing callable class, non-static callable method, missing callable method).
 - `entity_factory_valid.php`: three valid configurations (class+method, class-only with `createNew`, static callable) producing no errors.
 - `entity_factory_skip.php`: `factory: false`, non-constant `factory`/`factoryMethod`, and a standalone `#[Create]` on the class (which *is* validated — the one expected error comes from it).
+- `providers.php` (namespace `App\Provider`): `BookProvider` (implements `ProviderInterface`), `MethodNotExistsProvider`, `NotStaticProvider` (instance `provide`), `CallableProvider` (static `provide`), `CallableProviderWrongMethod`, plus a plain `provider_function()`. `ProviderClassNotExists` is deliberately never defined.
+- `entity_provider.php`: four operation/provider combinations that each trigger one error (missing class, missing callable method, non-static callable method, and a standalone `#[Show]` on the class with a missing method — proving directly-declared attributes are validated too).
+- `entity_provider_valid.php`: four valid configurations (class string, `Class::class`, static callable, existing function string) producing no errors.
+- `entity_provider_skip.php`: `provider: null`, non-constant `provider`, an operation without a `provider` argument, and a non-resource class with a broken provider (never checked — the rule only fires on `ResourceInterface` implementors).
 
 These files are loaded via `composer.json` `autoload-dev.files` so classes exist during analysis, and
 `Rule/Grid/data/grid.php` + `entity.php` + `grid_custom_filter.php` are excluded from PHPStan analysis
 in `phpstan.dist.neon`. `custom_filter.php` is deliberately **not** excluded: it declares no invalid
 references, so analysing it is what proves the interface implementation still holds on grid-bundle 1.16.
 The new `Rule/Resource/data/` factory fixtures (`book.php`, `factories.php`, `entity_factory*.php`) are
-excluded as well, because they reference the deliberately-missing factory classes.
+excluded as well, because they reference the deliberately-missing factory classes. The provider fixtures
+(`providers.php`, `entity_provider*.php`) follow the same pattern: they reference the deliberately-missing
+`ProviderClassNotExists`, so they are excluded from self-analysis too.
 
 ---
 
