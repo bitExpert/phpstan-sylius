@@ -43,7 +43,7 @@ use PHPStan\Node\InClassNode;
  */
 final class CollectGridNameForGridClass extends AbstractGridClassCollector implements Collector
 {
-    private const AS_GRID_ATTRIBUTE = 'Sylius\Component\Grid\Attribute\AsGrid';
+    private const ATTRIBUTE = 'Sylius\Component\Grid\Attribute\AsGrid';
 
     /**
      * @return class-string<InClassNode>
@@ -101,7 +101,7 @@ final class CollectGridNameForGridClass extends AbstractGridClassCollector imple
         $resourceClassName = null;
 
         foreach ($attributes as $attribute) {
-            if (self::AS_GRID_ATTRIBUTE !== $attribute->getName()) {
+            if (self::ATTRIBUTE !== $attribute->getName()) {
                 continue;
             }
 

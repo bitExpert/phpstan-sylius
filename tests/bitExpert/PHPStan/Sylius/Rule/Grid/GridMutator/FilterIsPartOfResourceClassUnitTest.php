@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace bitExpert\PHPStan\Sylius\Rule\Grid\GridMutator;
 
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectGridNameForGridClass;
+use bitExpert\PHPStan\Sylius\Collector\Grid\CollectGridNamesForGridMutatorClass;
 use bitExpert\PHPStan\Sylius\Collector\Grid\CollectRessourceClassForGridClass;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\BooleanFilter;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\DateFilter;
@@ -25,7 +26,6 @@ use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\MoneyFilter;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\SelectFilter;
 use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\StringFilter;
 use bitExpert\PHPStan\Sylius\Collector\Grid\GridMutator\CollectFilter;
-use bitExpert\PHPStan\Sylius\Collector\Grid\GridMutator\CollectGridNames;
 use PHPStan\Rules\Rule;
 use PHPStan\Testing\RuleTestCase;
 
@@ -57,7 +57,7 @@ class FilterIsPartOfResourceClassUnitTest extends RuleTestCase
         return [
             new CollectRessourceClassForGridClass(),
             new CollectGridNameForGridClass(),
-            new CollectGridNames(),
+            new CollectGridNamesForGridMutatorClass(),
             new CollectFilter(new DefaultFilterRegistry($filters)),
         ];
     }
