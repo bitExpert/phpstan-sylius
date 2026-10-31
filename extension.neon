@@ -6,6 +6,7 @@ rules:
 	- bitExpert\PHPStan\Sylius\Rule\Grid\GridMutator\FilterIsPartOfResourceClass
 	- bitExpert\PHPStan\Sylius\Rule\Resource\IndexOperationNeedsGridClassRule
 	- bitExpert\PHPStan\Sylius\Rule\Resource\ResourceAttributeNeedsFormTypeRule
+	- bitExpert\PHPStan\Sylius\Rule\Resource\CreateOperationNeedsFactoryRule
 
 services:
 	-
