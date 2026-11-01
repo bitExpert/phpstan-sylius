@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file, in reverse chronological order by release.
 
+## 0.4.0
+
+### Added
+
+- [#121](https://github.com/bitExpert/phpstan-sylius/pull/121) Add check for custom processor
+- [#120](https://github.com/bitExpert/phpstan-sylius/pull/120) Add check for custom providers
+- [#119](https://github.com/bitExpert/phpstan-sylius/pull/119) Check if resource factory class exits
+- [#118](https://github.com/bitExpert/phpstan-sylius/pull/118) Add support for grid mutators
+- [#113](https://github.com/bitExpert/phpstan-sylius/pull/113) Hardening grid and resource rules, grid-bundle 1.15/1.16 compatibility
+- [#109](https://github.com/bitExpert/phpstan-sylius/pull/109) Allow custom field handling
+
+### Deprecated
+
+- Nothing.
+
+### Removed
+
+- Nothing.
+
+### Fixed
+
+- [#112](https://github.com/bitExpert/phpstan-sylius/pull/112) Fix some issues with collectors and rules after testing
+
 ## 0.3.0
 
 ### Added
