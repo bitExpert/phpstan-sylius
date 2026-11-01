@@ -13,7 +13,7 @@ PHP: PHP 8.2 or higher
 
 Sylius: Sylius 2.0 or higher
 
-PHPStan: PHPStan 2.0 or higher
+PHPStan: PHPStan 2.2 or higher
 
 ## Installation
 
@@ -36,16 +36,21 @@ This PHPStan extension works for both Sylius plugins and Sylius application proj
 
 The following rules have been implemented:
 - Rule to check if resource classes defined either via AbstractGrid::getResourceClass() or the #AsGrid attribute exist
-- Rule to check that configured grid fields belong to the configured resource class
--   - custom field types are supported
-- Rule to check that configured filter fields belong to the configured resource class
-  - custom filter types are supported
-- Rule to check that fields added by a grid mutator (`#[AsGridMutator]`) belong to the resource class of the mutated grid
-- Rule to check that filters added by a grid mutator (`#[AsGridMutator]`) belong to the resource class of the mutated grid
-- Rule to check that grid class configured via the `Index` attribute exists
+- Rule to check that configured grid fields belong to the configured resource class:
+   - custom field types are supported
+   - grid mutators are supported
+- Rule to check that configured filter fields belong to the configured resource class:
+   - custom filter types are supported
+   - grid mutators are supported
+- Rule to check that grid class configured via the `Index` operation attribute exists
 - Rule to check that form type configured via the `AsResource` attribute exists
-- Rule to check that the provider configured on an operation exists: a class-string provider has to reference an existing class, a callable `[Class::class, 'method']` provider needs an existing and static method
-- Rule to check that the processor configured on an operation exists: a class-string processor has to reference an existing class, a callable `[Class::class, 'method']` processor needs an existing and static method
+- Rule to check that a [resource factory](https://stack.sylius.com/resource/index/resource_factories#use-a-factory-without-declaring-it) configured on a resource operation exists
+- Rule to check that a [custom provider](https://stack.sylius.com/resource/index/providers#custom-providers) configured on a resource operation exists: 
+   - a class-string provider has to reference an existing class
+   - a callable `[Class::class, 'method']` provider needs an existing and static method
+- Rule to check that a [custom processor](https://stack.sylius.com/resource/index/processors#custom-processors) configured on a resource operation exists:
+   - a class-string processor has to reference an existing class
+   - a callable `[Class::class, 'method']` processor needs an existing and static method
 
 ### Custom filter types
 
