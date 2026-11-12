@@ -19,7 +19,7 @@ use PHPUnit\Framework\Attributes\Test;
 /**
  * @extends RuleTestCase<IndexOperationNeedsGridClassRule>
  */
-class IndexOperationNeedsGridClassUnitTest extends RuleTestCase
+final class IndexOperationNeedsGridClassUnitTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {

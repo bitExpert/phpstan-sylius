@@ -19,7 +19,7 @@ use PHPUnit\Framework\Attributes\Test;
 /**
  * @extends RuleTestCase<ResourceAwareGridNeedsResourceClass>
  */
-class ResourceAwareGridNeedsResourceClassValidUnitTest extends RuleTestCase
+final class ResourceAwareGridNeedsResourceClassValidUnitTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {

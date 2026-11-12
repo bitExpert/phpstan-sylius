@@ -16,7 +16,7 @@ namespace bitExpert\PHPStan\Sylius\Rule\Resource;
  * Validates the grid class referenced by #[Index(grid: '...')] on a resource
  * class: the referenced class has to exist.
  */
-class IndexOperationNeedsGridClassRule extends AbstractResourceAttributeClassRule
+final class IndexOperationNeedsGridClassRule extends AbstractResourceAttributeClassRule
 {
     protected function getAttributeName(): string
     {

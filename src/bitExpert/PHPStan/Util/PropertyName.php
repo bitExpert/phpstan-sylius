@@ -12,7 +12,7 @@ declare(strict_types=1);
 
 namespace bitExpert\PHPStan\Util;
 
-class PropertyName
+final class PropertyName
 {
     public static function convertSnakeToCamelCase(string $string): string
     {

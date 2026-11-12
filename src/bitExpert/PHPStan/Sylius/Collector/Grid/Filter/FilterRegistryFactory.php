@@ -14,7 +14,7 @@ namespace bitExpert\PHPStan\Sylius\Collector\Grid\Filter;
 
 use PHPStan\DependencyInjection\Container;
 
-class FilterRegistryFactory
+final class FilterRegistryFactory
 {
     public const TYPE_DESCRIPTOR_TAG = 'phpstan.sylius.grid.filter';
 

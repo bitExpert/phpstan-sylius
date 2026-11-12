@@ -18,7 +18,7 @@ use bitExpert\PHPStan\Sylius\Collector\Grid\Filter\StringFilter;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
-class DefaultFilterRegistryUnitTest extends TestCase
+final class DefaultFilterRegistryUnitTest extends TestCase
 {
     #[Test]
     public function addingFiltersToRegistry(): void

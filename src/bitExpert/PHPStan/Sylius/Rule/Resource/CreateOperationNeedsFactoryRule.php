@@ -35,7 +35,7 @@ use PHPStan\Rules\IdentifierRuleError;
  * Only the Create operation is targeted, because factory and factoryMethod
  * are the arguments of the CreateOperation metadata only.
  */
-class CreateOperationNeedsFactoryRule extends AbstractResourceOperationRule
+final class CreateOperationNeedsFactoryRule extends AbstractResourceOperationRule
 {
     private const CREATE_ATTRIBUTE = 'Sylius\Resource\Metadata\Create';
 

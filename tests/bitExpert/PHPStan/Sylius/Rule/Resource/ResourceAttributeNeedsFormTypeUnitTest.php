@@ -19,7 +19,7 @@ use PHPUnit\Framework\Attributes\Test;
 /**
  * @extends RuleTestCase<ResourceAttributeNeedsFormTypeRule>
  */
-class ResourceAttributeNeedsFormTypeUnitTest extends RuleTestCase
+final class ResourceAttributeNeedsFormTypeUnitTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {

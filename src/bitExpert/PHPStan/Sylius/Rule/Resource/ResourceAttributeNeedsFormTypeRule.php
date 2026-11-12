@@ -16,7 +16,7 @@ namespace bitExpert\PHPStan\Sylius\Rule\Resource;
  * Validates the form type referenced by #[AsResource(formType: '...')] on a
  * resource class: the referenced class has to exist.
  */
-class ResourceAttributeNeedsFormTypeRule extends AbstractResourceAttributeClassRule
+final class ResourceAttributeNeedsFormTypeRule extends AbstractResourceAttributeClassRule
 {
     protected function getAttributeName(): string
     {

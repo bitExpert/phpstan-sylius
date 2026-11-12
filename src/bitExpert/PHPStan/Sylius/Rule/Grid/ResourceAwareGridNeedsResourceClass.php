@@ -31,7 +31,7 @@ use PHPStan\Rules\RuleErrorBuilder;
 /**
  * @implements Rule<InClassNode>
  */
-readonly class ResourceAwareGridNeedsResourceClass implements Rule
+final readonly class ResourceAwareGridNeedsResourceClass implements Rule
 {
     private const AS_GRID_ATTRIBUTE = 'Sylius\Component\Grid\Attribute\AsGrid';
 

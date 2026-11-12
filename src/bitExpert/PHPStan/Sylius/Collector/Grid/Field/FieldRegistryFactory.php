@@ -14,7 +14,7 @@ namespace bitExpert\PHPStan\Sylius\Collector\Grid\Field;
 
 use PHPStan\DependencyInjection\Container;
 
-class FieldRegistryFactory
+final class FieldRegistryFactory
 {
     public const TYPE_DESCRIPTOR_TAG = 'phpstan.sylius.grid.field';
 

@@ -16,7 +16,7 @@ use bitExpert\PHPStan\Util\PropertyName;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
-class PropertyNameUnitTest extends TestCase
+final class PropertyNameUnitTest extends TestCase
 {
     #[Test]
     public function convertSnakeToCamelCaseWithUnderscores(): void

@@ -27,7 +27,7 @@ use PHPStan\Testing\RuleTestCase;
 /**
  * @extends RuleTestCase<FieldIsPartOfResourceClass>
  */
-class FieldIsPartOfResourceClassUnitTest extends RuleTestCase
+final class FieldIsPartOfResourceClassUnitTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {

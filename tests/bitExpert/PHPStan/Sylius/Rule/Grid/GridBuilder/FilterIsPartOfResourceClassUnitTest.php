@@ -35,7 +35,7 @@ use PHPStan\Testing\RuleTestCase;
 /**
  * @extends RuleTestCase<FilterIsPartOfResourceClass>
  */
-class FilterIsPartOfResourceClassUnitTest extends RuleTestCase
+final class FilterIsPartOfResourceClassUnitTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {

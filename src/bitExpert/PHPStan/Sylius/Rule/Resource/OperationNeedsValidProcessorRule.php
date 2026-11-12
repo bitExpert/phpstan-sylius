@@ -28,7 +28,7 @@ use PHPStan\Rules\IdentifierRuleError;
  * AttributesResourceMetadataCollectionFactory and keeps custom operation
  * classes covered as well.
  */
-class OperationNeedsValidProcessorRule extends AbstractResourceOperationRule
+final class OperationNeedsValidProcessorRule extends AbstractResourceOperationRule
 {
     protected function isTargetAttribute(string $attributeName): bool
     {

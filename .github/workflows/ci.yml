@@ -55,5 +55,8 @@ jobs:
       - name: Static code analysis
         run: composer static-analysis
 
+      - name: Architecture analysis
+        run: composer structarmed
+
       - name: Unittests
         run: composer test

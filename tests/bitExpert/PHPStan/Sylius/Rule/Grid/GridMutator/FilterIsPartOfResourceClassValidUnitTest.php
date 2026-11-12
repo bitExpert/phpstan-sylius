@@ -30,7 +30,7 @@ use PHPUnit\Framework\Attributes\Test;
 /**
  * @extends RuleTestCase<FilterIsPartOfResourceClass>
  */
-class FilterIsPartOfResourceClassValidUnitTest extends RuleTestCase
+final class FilterIsPartOfResourceClassValidUnitTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {

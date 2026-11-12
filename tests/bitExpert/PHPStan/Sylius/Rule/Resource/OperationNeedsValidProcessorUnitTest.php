@@ -19,7 +19,7 @@ use PHPUnit\Framework\Attributes\Test;
 /**
  * @extends RuleTestCase<OperationNeedsValidProcessorRule>
  */
-class OperationNeedsValidProcessorUnitTest extends RuleTestCase
+final class OperationNeedsValidProcessorUnitTest extends RuleTestCase
 {
     protected function getRule(): Rule
     {

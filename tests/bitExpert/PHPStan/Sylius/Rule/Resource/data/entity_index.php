@@ -8,7 +8,7 @@ use Sylius\Resource\Metadata\Index;
 use Sylius\Resource\Model\ResourceInterface;
 
 #[Index(grid: 'App\Grid\GridClassNotExists')]
-class EntityIndex implements ResourceInterface
+final class EntityIndex implements ResourceInterface
 {
     private int $id;
 
