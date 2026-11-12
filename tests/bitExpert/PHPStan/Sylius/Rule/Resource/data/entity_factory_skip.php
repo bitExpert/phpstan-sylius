@@ -21,7 +21,7 @@ use Sylius\Resource\Model\ResourceInterface;
         ),
     ],
 )]
-final class EntityFactoryDisabled implements ResourceInterface
+class EntityFactoryDisabled implements ResourceInterface
 {
     public function getId(): int
     {
@@ -42,7 +42,7 @@ final class EntityFactoryDisabled implements ResourceInterface
         ),
     ],
 )]
-final class EntityWithNonConstantFactory implements ResourceInterface
+class EntityWithNonConstantFactory implements ResourceInterface
 {
     public function getId(): int
     {
@@ -62,7 +62,7 @@ final class EntityWithNonConstantFactory implements ResourceInterface
         ),
     ],
 )]
-final class EntityWithNonConstantFactoryMethod implements ResourceInterface
+class EntityWithNonConstantFactoryMethod implements ResourceInterface
 {
     public function getId(): int
     {
@@ -79,7 +79,7 @@ final class EntityWithNonConstantFactoryMethod implements ResourceInterface
     factory: CallableFactory::class,
     factoryMethod: 'methodDoesNotExist',
 )]
-final class EntityWithStandaloneCreateAttribute implements ResourceInterface
+class EntityWithStandaloneCreateAttribute implements ResourceInterface
 {
     public function getId(): int
     {

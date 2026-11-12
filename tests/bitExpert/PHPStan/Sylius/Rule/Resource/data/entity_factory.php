@@ -28,7 +28,7 @@ use Sylius\Resource\Model\ResourceInterface;
         ),
     ],
 )]
-final class EntityFactoryClassNotExists implements ResourceInterface
+class EntityFactoryClassNotExists implements ResourceInterface
 {
     public function getId(): int
     {
@@ -49,7 +49,7 @@ final class EntityFactoryClassNotExists implements ResourceInterface
         ),
     ],
 )]
-final class EntityFactoryMethodNotExists implements ResourceInterface
+class EntityFactoryMethodNotExists implements ResourceInterface
 {
     public function getId(): int
     {
@@ -69,7 +69,7 @@ final class EntityFactoryMethodNotExists implements ResourceInterface
         ),
     ],
 )]
-final class EntityFactoryCreateNewNotExists implements ResourceInterface
+class EntityFactoryCreateNewNotExists implements ResourceInterface
 {
     public function getId(): int
     {
@@ -88,7 +88,7 @@ final class EntityFactoryCreateNewNotExists implements ResourceInterface
         ),
     ],
 )]
-final class EntityCallableFactoryClassNotExists implements ResourceInterface
+class EntityCallableFactoryClassNotExists implements ResourceInterface
 {
     public function getId(): int
     {
@@ -109,7 +109,7 @@ final class EntityCallableFactoryClassNotExists implements ResourceInterface
         ),
     ],
 )]
-final class EntityCallableFactoryMethodNotStatic implements ResourceInterface
+class EntityCallableFactoryMethodNotStatic implements ResourceInterface
 {
     public function getId(): int
     {
@@ -128,7 +128,7 @@ final class EntityCallableFactoryMethodNotStatic implements ResourceInterface
         ),
     ],
 )]
-final class EntityCallableFactoryMethodNotExists implements ResourceInterface
+class EntityCallableFactoryMethodNotExists implements ResourceInterface
 {
     public function getId(): int
     {

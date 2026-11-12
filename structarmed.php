@@ -4,15 +4,12 @@ declare(strict_types=1);
 
 use Boundwize\StructArmed\Architecture;
 use Boundwize\StructArmed\Preset\Preset;
-use Boundwize\StructArmed\Preset\Presets\Psr4Preset;
 use Boundwize\StructArmed\Rule\Rules\Class_\MustBeFinalRule;
 
 return Architecture::define()
     ->skip([
-        Psr4Preset::CLASSES_MUST_MATCH_COMPOSER => [
-            __DIR__ . '/tests/bitExpert/PHPStan/Sylius/Rule/Resource/data',
-            __DIR__ . '/tests/bitExpert/PHPStan/Sylius/Rule/Grid/data',
-        ],
+        __DIR__ . '/tests/bitExpert/PHPStan/Sylius/Rule/Resource/data',
+        __DIR__ . '/tests/bitExpert/PHPStan/Sylius/Rule/Grid/data',
     ])
     ->withPresets(Preset::PSR4(), Preset::CODEQUALITY())
 

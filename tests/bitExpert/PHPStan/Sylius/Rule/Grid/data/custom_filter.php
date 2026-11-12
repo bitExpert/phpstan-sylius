@@ -17,7 +17,7 @@ use Sylius\Bundle\GridBundle\Builder\Filter\FilterInterface;
  * a sub-interface of the Component one, and a wrong signature here would be
  * reported on that lane only.
  */
-final class CustomFilter implements FilterInterface
+class CustomFilter implements FilterInterface
 {
     /** @var array<string, mixed> */
     private array $options = [];

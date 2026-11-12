@@ -25,7 +25,7 @@ use Sylius\Resource\Model\ResourceInterface;
         ),
     ],
 )]
-final class EntityProcessorClassNotExists implements ResourceInterface
+class EntityProcessorClassNotExists implements ResourceInterface
 {
     public function getId(): int
     {
@@ -45,7 +45,7 @@ final class EntityProcessorClassNotExists implements ResourceInterface
         ),
     ],
 )]
-final class EntityProcessorMethodNotExists implements ResourceInterface
+class EntityProcessorMethodNotExists implements ResourceInterface
 {
     public function getId(): int
     {
@@ -66,7 +66,7 @@ final class EntityProcessorMethodNotExists implements ResourceInterface
         ),
     ],
 )]
-final class EntityProcessorMethodNotStatic implements ResourceInterface
+class EntityProcessorMethodNotStatic implements ResourceInterface
 {
     public function getId(): int
     {
@@ -82,7 +82,7 @@ final class EntityProcessorMethodNotStatic implements ResourceInterface
     path: 'books',
     processor: [CallableProcessor::class, 'methodDoesNotExist'],
 )]
-final class EntityWithStandaloneShowProcessorAttribute implements ResourceInterface
+class EntityWithStandaloneShowProcessorAttribute implements ResourceInterface
 {
     public function getId(): int
     {

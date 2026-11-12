@@ -23,7 +23,7 @@ use Sylius\Resource\Model\ResourceInterface;
         ),
     ],
 )]
-final class EntityValidProcessorClass implements ResourceInterface
+class EntityValidProcessorClass implements ResourceInterface
 {
     public function getId(): int
     {
@@ -42,7 +42,7 @@ final class EntityValidProcessorClass implements ResourceInterface
         ),
     ],
 )]
-final class EntityValidCallableProcessor implements ResourceInterface
+class EntityValidCallableProcessor implements ResourceInterface
 {
     public function getId(): int
     {
@@ -63,7 +63,7 @@ final class EntityValidCallableProcessor implements ResourceInterface
         ),
     ],
 )]
-final class EntityValidFunctionProcessor implements ResourceInterface
+class EntityValidFunctionProcessor implements ResourceInterface
 {
     public function getId(): int
     {
@@ -82,7 +82,7 @@ final class EntityValidFunctionProcessor implements ResourceInterface
         ),
     ],
 )]
-final class EntityValidProcessorString implements ResourceInterface
+class EntityValidProcessorString implements ResourceInterface
 {
     public function getId(): int
     {

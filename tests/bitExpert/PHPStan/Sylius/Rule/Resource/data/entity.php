@@ -10,7 +10,7 @@ use Sylius\Resource\Model\ResourceInterface;
 #[AsResource(
     formType: 'FormClassNotExists',
 )]
-final class Entity implements ResourceInterface
+class Entity implements ResourceInterface
 {
     private int $id;
 

@@ -12,7 +12,7 @@ enum Status: string
     case INACTIVE = 'inactive';
 }
 
-final class Country
+class Country
 {
     private string $isoCode;
 
@@ -22,7 +22,7 @@ final class Country
     }
 }
 
-final class Address
+class Address
 {
     private $city;
 
@@ -39,7 +39,7 @@ final class Address
     }
 }
 
-final class Supplier implements ResourceInterface
+class Supplier implements ResourceInterface
 {
     private int $id;
 
@@ -68,7 +68,7 @@ final class Supplier implements ResourceInterface
     }
 }
 
-final class Patient
+class Patient
 {
     private string $name;
 
@@ -78,7 +78,7 @@ final class Patient
     }
 }
 
-final class Medipack implements ResourceInterface
+class Medipack implements ResourceInterface
 {
     private Patient $patient;
 
