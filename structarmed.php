@@ -16,14 +16,15 @@ return Architecture::define()
     ->layer('Util', 'src/bitExpert/PHPStan/Util/')
     ->layer('Field', 'src/bitExpert/PHPStan/Sylius/Collector/Grid/Field/')
     ->layer('Filter', 'src/bitExpert/PHPStan/Sylius/Collector/Grid/Filter/')
-    ->layer('Collector',
+    ->layer(
+        'Collector',
         // All classes in here belong to Collector,
         'src/bitExpert/PHPStan/Sylius/Collector/',
         // except these directories, which belong to the specific layers defined above.
         [
             'src/bitExpert/PHPStan/Sylius/Collector/Grid/Field/',
             'src/bitExpert/PHPStan/Sylius/Collector/Grid/Filter/',
-        ]
+        ],
     )
     ->layer('GridRule', 'src/bitExpert/PHPStan/Sylius/Rule/Grid/')
     ->layer('ResourceRule', 'src/bitExpert/PHPStan/Sylius/Rule/Resource/')
